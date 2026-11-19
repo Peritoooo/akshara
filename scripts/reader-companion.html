@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>The Quiet Hours — Akshara Companions</title>
+<style>
+  @font-face {
+    font-family: "Fraunces";
+    src: url("../node_modules/@fontsource-variable/fraunces/files/fraunces-latin-wght-normal.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: "Literata";
+    src: url("../node_modules/@fontsource-variable/literata/files/literata-latin-wght-normal.woff2") format("woff2");
+    font-weight: 200 900;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: "Literata";
+    src: url("../node_modules/@fontsource-variable/literata/files/literata-latin-wght-italic.woff2") format("woff2");
+    font-weight: 200 900;
+    font-style: italic;
+  }
+  @font-face {
+    font-family: "Inter";
+    src: url("../node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2") format("woff2");
+    font-weight: 100 900;
+    font-style: normal;
+  }
+
+  @page { size: 6in 9in; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #F7F5F0; color: #242424; }
+  body { font-family: "Literata", Georgia, serif; }
+
+  .page {
+    width: 6in;
+    height: 9in;
+    page-break-after: always;
+    position: relative;
+    overflow: hidden;
+    background: #F7F5F0;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  .cover {
+    background: #242424;
+    color: #F2EBDD;
+    padding: 0.62in;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .cover .rule { height: 1px; background: rgba(182,154,105,.55); }
+  .cover .brand {
+    font-family: "Inter", sans-serif;
+    font-size: 8pt;
+    letter-spacing: .34em;
+    color: #B69A69;
+    text-transform: uppercase;
+  }
+  .cover .devanagari {
+    font-family: Georgia, serif;
+    font-size: 15pt;
+    color: #B69A69;
+    margin-top: 10pt;
+  }
+  .cover h1 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 400;
+    font-size: 47pt;
+    line-height: .98;
+    letter-spacing: -.02em;
+    margin: 0;
+    max-width: 4.2in;
+  }
+  .cover .sub {
+    font-family: "Literata", Georgia, serif;
+    font-style: italic;
+    font-size: 13.5pt;
+    color: #CDC6B8;
+    margin-top: 16pt;
+  }
+  .cover .art { position: absolute; right: -58pt; top: 1.15in; opacity: .55; }
+  .cover .bottom { display: flex; justify-content: space-between; align-items: flex-end; font-family: "Inter", sans-serif; font-size: 7pt; letter-spacing: .22em; text-transform: uppercase; color: #B8AE9D; }
+  .cover .bottom strong { color: #B69A69; font-weight: 500; }
+
+  .interior { padding: 0.72in 0.72in 0.6in; display: flex; flex-direction: column; }
+  .running-head {
+    font-family: "Inter", sans-serif;
+    font-size: 6.5pt;
+    letter-spacing: .26em;
+    text-transform: uppercase;
+    color: #948B7C;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #E2DACC;
+    padding-bottom: 7pt;
+    margin-bottom: 30pt;
+  }
+  .folio {
+    position: absolute;
+    bottom: 0.4in;
+    left: 0; right: 0;
+    text-align: center;
+    font-family: "Inter", sans-serif;
+    font-size: 7pt;
+    color: #948B7C;
+    letter-spacing: .12em;
+  }
+  h2 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 400;
+    font-size: 25pt;
+    line-height: 1.05;
+    letter-spacing: -.015em;
+    margin: 0 0 14pt;
+  }
+  .kicker {
+    font-family: "Inter", sans-serif;
+    font-size: 7pt;
+    letter-spacing: .28em;
+    text-transform: uppercase;
+    color: #9A7B4E;
+    margin-bottom: 12pt;
+  }
+  p {
+    font-size: 10.5pt;
+    line-height: 1.78;
+    margin: 0 0 10pt;
+    text-align: justify;
+    hyphens: auto;
+  }
+  p.first::first-letter {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 36pt;
+    float: left;
+    line-height: .78;
+    padding: 5pt 6pt 0 0;
+    color: #8A6E47;
+  }
+  .lede { font-style: italic; color: #5F584D; }
+  blockquote {
+    margin: 22pt 0;
+    padding: 2pt 0 2pt 20pt;
+    border-left: 1px solid #B69A69;
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 14pt;
+    line-height: 1.45;
+    color: #4A4035;
+    font-style: italic;
+  }
+  .ornament { text-align: center; color: #B69A69; font-size: 13pt; letter-spacing: .5em; margin: 18pt 0 6pt; }
+  .title-page { padding: 1.45in 0.8in; display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .title-page .mark {
+    width: 44pt; height: 44pt; border: 1px solid #B69A69; display: flex; align-items: center; justify-content: center;
+    color: #8A6E47; font-family: Georgia, serif; font-size: 20pt; margin-bottom: 34pt;
+  }
+  .title-page h1 {
+    font-family: "Fraunces", Georgia, serif; font-weight: 400; font-size: 34pt; line-height: 1.02; margin: 0 0 14pt; letter-spacing: -.02em;
+  }
+  .title-page .sub { font-style: italic; font-size: 12pt; color: #6B6256; margin-bottom: 38pt; }
+  .title-page .imprint { margin-top: auto; font-family: "Inter", sans-serif; font-size: 7pt; letter-spacing: .24em; text-transform: uppercase; color: #948B7C; line-height: 2; }
+  .quote-page { display: flex; align-items: center; justify-content: center; padding: 1in; text-align: center; }
+  .quote-page blockquote { border: 0; font-size: 19pt; line-height: 1.45; padding: 0; margin: 0; color: #3D372F; }
+  .quote-page .attribution { font-family: "Inter", sans-serif; font-size: 7pt; letter-spacing: .24em; text-transform: uppercase; color: #948B7C; margin-top: 22pt; }
+  .toc { padding-top: .9in; }
+  .toc h2 { margin-bottom: 32pt; }
+  .toc ol { list-style: none; margin: 0; padding: 0; }
+  .toc li { display: flex; align-items: baseline; gap: 8pt; margin-bottom: 17pt; font-size: 11pt; }
+  .toc .num { font-family: "Inter", sans-serif; font-size: 7pt; color: #9A7B4E; letter-spacing: .14em; width: 18pt; }
+  .toc .name { flex: 1; }
+  .toc .dots { border-bottom: 1px dotted #C9C0B2; flex: 0 0 28pt; }
+  .toc .pg { font-family: "Inter", sans-serif; font-size: 7.5pt; color: #948B7C; width: 16pt; text-align: right; }
+  .colophon { justify-content: center; align-items: center; text-align: center; padding: 1in; }
+  .colophon .mark { width: 40pt; height: 40pt; border: 1px solid #B69A69; margin: 0 auto 30pt; display: flex; align-items: center; justify-content: center; color: #8A6E47; font-family: Georgia, serif; font-size: 18pt; }
+  .colophon p { text-align: center; font-size: 9.5pt; color: #6B6256; line-height: 1.8; }
+  .colophon .small { font-family: "Inter", sans-serif; font-size: 6.8pt; letter-spacing: .2em; text-transform: uppercase; color: #948B7C; margin-top: 26pt; line-height: 2; }
+  .back-cover { background: #242424; color: #EFE9DC; padding: .8in; display: flex; flex-direction: column; justify-content: space-between; }
+  .back-cover .blurb { font-family: "Fraunces", Georgia, serif; font-size: 21pt; line-height: 1.3; letter-spacing: -.01em; }
+  .back-cover .meta { font-family: "Inter", sans-serif; font-size: 7pt; letter-spacing: .22em; text-transform: uppercase; color: #B8AE9D; line-height: 2.2; }
+  .back-cover .gold { color: #B69A69; }
+</style>
+</head>
+<body>
+  <!-- Cover -->
+  <section class="page cover">
+    <div>
+      <div class="brand">Akshara Companions</div>
+      <div class="devanagari">अक्षर</div>
+    </div>
+    <svg class="art" width="300" height="300" viewBox="0 0 300 300" fill="none" aria-hidden="true">
+      <circle cx="150" cy="150" r="120" stroke="#B69A69" stroke-opacity=".35"/>
+      <circle cx="150" cy="150" r="92" stroke="#B69A69" stroke-opacity=".22"/>
+      <path d="M150 30v240M52 100h196M52 200h196" stroke="#B69A69" stroke-opacity=".16"/>
+      <path d="M82 218V120c0-38 30-68 68-68s68 30 68 68v98" stroke="#B69A69" stroke-opacity=".5"/>
+      <path d="M108 218v-92c0-23 19-42 42-42s42 19 42 42v92" stroke="#B69A69" stroke-opacity=".3"/>
+      <circle cx="150" cy="150" r="4" fill="#B69A69"/>
+    </svg>
+    <div>
+      <div class="rule" style="margin-bottom:22pt"></div>
+      <h1>The<br/>Quiet<br/>Hours</h1>
+      <div class="sub">Notes on reading well,<br/>and reading slowly.</div>
+    </div>
+    <div class="bottom">
+      <span><strong>Akshara</strong> · Reader's Companion No. 01</span>
+      <span>2026</span>
+    </div>
+  </section>
+
+  <!-- Title page -->
+  <section class="page interior title-page">
+    <div class="mark">अ</div>
+    <h1>The Quiet Hours</h1>
+    <div class="sub">Notes on reading well, and reading slowly</div>
+    <div class="ornament">· · ·</div>
+    <div class="imprint">
+      Akshara Editions<br/>
+      Reader's Companion No. 01<br/>
+      MMXXVI
+    </div>
+  </section>
+
+  <!-- Epigraph -->
+  <section class="page quote-page">
+    <div>
+      <blockquote>“A reader lives a thousand lives before he dies. The man who never reads lives only one.”</blockquote>
+      <div class="attribution">George R. R. Martin</div>
+    </div>
+  </section>
+
+  <!-- Contents -->
+  <section class="page interior toc">
+    <div class="running-head"><span>Akshara Companions</span><span>The Quiet Hours</span></div>
+    <h2>Contents</h2>
+    <ol>
+      <li><span class="num">I</span><span class="name">Make a place for attention</span><span class="dots"></span><span class="pg">5</span></li>
+      <li><span class="num">II</span><span class="name">Begin anywhere</span><span class="dots"></span><span class="pg">6</span></li>
+      <li><span class="num">III</span><span class="name">On difficult books</span><span class="dots"></span><span class="pg">7</span></li>
+      <li><span class="num">IV</span><span class="name">The commonplace book</span><span class="dots"></span><span class="pg">8</span></li>
+      <li><span class="num">V</span><span class="name">Finishing is not the point</span><span class="dots"></span><span class="pg">9</span></li>
+      <li><span class="num">VI</span><span class="name">What to read next</span><span class="dots"></span><span class="pg">10</span></li>
+      <li><span class="num"></span><span class="name">A note on this edition</span><span class="dots"></span><span class="pg">11</span></li>
+    </ol>
+    <div class="folio">4</div>
+  </section>
+
+  <!-- I -->
+  <section class="page interior">
+    <div class="running-head"><span>The Quiet Hours</span><span>I</span></div>
+    <div class="kicker">Chapter One</div>
+    <h2>Make a place for attention</h2>
+    <p class="first">Reading is less a talent than a condition. We do not need to become better readers so much as to become available to the book in front of us. The first task, then, is not speed or comprehension. It is making a small room in the day where nothing else is asking to be looked at.</p>
+    <p>That room does not have to be beautiful. A train seat will do. A kitchen table after the plates are cleared will do. What matters is that the room is dependable — that the mind learns the shape of it and stops bracing for interruption. Twenty minutes at the same hour each day is worth more than a free afternoon that never quite arrives.</p>
+    <p>Keep the phone in another room. This is not a moral instruction; it is an acknowledgement of how attention works. A book asks us to hold a thread across hundreds of pages. A notification asks us to drop it. The two requests cannot both be honored.</p>
+    <blockquote>The book is not asking for your whole life. It is asking for the next half hour, and then the half hour after that.</blockquote>
+    <p>Some readers need silence. Others need the low murmur of a café, the hum of a train, the rain against a window. Learn which reader you are, and arrange your days accordingly. Reading well is mostly a matter of arranging things.</p>
+    <div class="folio">5</div>
+  </section>
+
+  <!-- II -->
+  <section class="page interior">
+    <div class="running-head"><span>The Quiet Hours</span><span>II</span></div>
+    <div class="kicker">Chapter Two</div>
+    <h2>Begin anywhere</h2>
+    <p class="first">There is no rule that says a book must be entered at the first page. The first page is a convention, and conventions are useful, but they are not laws. Some books want to be opened in the middle, at a sentence that catches the eye. Some want the final chapter first. A reader is allowed to be curious.</p>
+    <p>This is especially true of essays, poetry, and books of wisdom. Marcus Aurelius did not write <em>Meditations</em> as a continuous argument. He wrote notes to himself, one day at a time. Opening it at random is not a failure of method; it is the method.</p>
+    <p>Even novels can tolerate a little wandering. If the opening chapter does not hold you, read the second. If the second does not, read the last page and see whether the destination makes the journey worth attempting. There is no committee that will revoke your reader's license.</p>
+    <blockquote>A book is not a corridor with a single door. It is a house. You may enter through any window that is open.</blockquote>
+    <p>What matters is contact. A book unread is a closed room. A book read badly, impatiently, in fragments, is still a room you have stood inside. Begin anywhere. Begin again.</p>
+    <div class="folio">6</div>
+  </section>
+
+  <!-- III -->
+  <section class="page interior">
+    <div class="running-head"><span>The Quiet Hours</span><span>III</span></div>
+    <div class="kicker">Chapter Three</div>
+    <h2>On difficult books</h2>
+    <p class="first">Some books resist us. The sentences are long, the references are unfamiliar, the pace is not the pace we wanted. The instinct is to blame the book or to blame ourselves. Usually neither is correct. Difficulty is often just distance — the distance between the world a book was written in and the world we bring to it.</p>
+    <p>Close the distance a little at a time. Read the introduction, even if introductions feel like homework. Look up one thing you do not know, and then let the rest remain unknown. Read ten pages and stop. Read them again tomorrow. Comprehension is rarely a flash of light; more often it is a gradual adjustment of the eyes.</p>
+    <p>Keep a pencil nearby. Underline what puzzles you as readily as what pleases you. A mark in the margin is a small promise to return. You are not defacing the book; you are beginning a conversation with it.</p>
+    <blockquote>The difficult book is not a test you are failing. It is a country you have not yet learned to walk in.</blockquote>
+    <p>And if, after a fair attempt, the book remains closed to you, put it down without shame. The right book at the wrong time is still the wrong book. It may become the right one in five years. Leave a bookmark in it and let it wait.</p>
+    <div class="folio">7</div>
+  </section>
+
+  <!-- IV -->
+  <section class="page interior">
+    <div class="running-head"><span>The Quiet Hours</span><span>IV</span></div>
+    <div class="kicker">Chapter Four</div>
+    <h2>The commonplace book</h2>
+    <p class="first">For centuries, readers kept commonplace books: notebooks in which they copied passages that struck them, alongside their own responses. The practice was not a sign of unusual diligence. It was simply what reading felt like before books became cheap and abundant — a way of holding on to what mattered.</p>
+    <p>We have better tools now, and worse habits. It is easy to highlight a sentence and never look at it again. The point of a commonplace book is not collection. It is return. A passage copied by hand, or typed slowly, or read aloud to someone else, has a way of settling into memory that a single tap does not.</p>
+    <blockquote>Do not ask what you should remember. Ask what you would like to meet again.</blockquote>
+    <p>In Akshara, every highlight can carry a note. Use it to write back. Disagree. Ask a question. Connect the sentence to something else you have read. In ten years, the notes will be more valuable than the highlights, because they will be yours.</p>
+    <p>A commonplace book has no correct size. Ten entries a year is enough. The practice is not a performance; it is a conversation with your future self, conducted at a distance of years.</p>
+    <div class="folio">8</div>
+  </section>
+
+  <!-- V -->
+  <section class="page interior">
+    <div class="running-head"><span>The Quiet Hours</span><span>V</span></div>
+    <div class="kicker">Chapter Five</div>
+    <h2>Finishing is not the point</h2>
+    <p class="first">We count books the way we count steps, as if the number were the achievement. But reading is not a distance to be covered. A book finished in a hurry has given us less than a book we lived with for a season, even if the season ends before the final page.</p>
+    <p>This is not permission to abandon everything. It is permission to read at the speed the book asks for. Some books are a weekend. Some are a winter. Some are a decade, read a few pages at a time, returning each year to the same underlined passages. The reading life is long enough for all of them.</p>
+    <p>Notice, too, the books you finish and forget. They are not wasted. They were part of the weather of a particular year. The books that stay are not always the ones we expected; often they are the ones we resisted, or the ones we read at exactly the right moment.</p>
+    <blockquote>Read the book you are reading. The next one will wait. It has waited a long time already.</blockquote>
+    <p>When you close a book, take a minute before reaching for the next. Let the last page settle. Write one sentence about what you are taking with you. Then choose the next book slowly, as you would choose a companion for a long walk.</p>
+    <div class="folio">9</div>
+  </section>
+
+  <!-- VI -->
+  <section class="page interior">
+    <div class="running-head"><span>The Quiet Hours</span><span>VI</span></div>
+    <div class="kicker">Chapter Six</div>
+    <h2>What to read next</h2>
+    <p class="first">The best next book is rarely the most anticipated one. It is the one that meets the reader you are today. If you have been reading arguments, choose a novel. If you have been reading plot, choose a book of essays. If you have been reading for information, read something useless and beautiful.</p>
+    <p>Keep a small shelf of books you have not read yet. Not a queue — a shelf. A queue implies obligation; a shelf implies possibility. Let three or four titles sit there until one of them begins to glow. That is the one to pick up.</p>
+    <p>Reread more than you think you should. A book reread at thirty is a different book from the one read at eighteen, though the words have not changed. The second reading is where the conversation deepens, because now you are bringing a life to it.</p>
+    <blockquote>There is no correct reading list. There is only the next book, and the attention you bring to it.</blockquote>
+    <p>And when nothing seems right, return to an old favorite. Comfort is not a failure of ambition. It is a way of reminding yourself why you read in the first place: for the pleasure of being somewhere else, entirely, for a while.</p>
+    <div class="folio">10</div>
+  </section>
+
+  <!-- Note on edition -->
+  <section class="page interior">
+    <div class="running-head"><span>The Quiet Hours</span><span>Colophon</span></div>
+    <div class="kicker">A note on this edition</div>
+    <h2>About this companion</h2>
+    <p class="first">This is the first Akshara Reader's Companion: a short book made to be read in this reader, on a quiet afternoon, with the sound of rain or traffic somewhere beyond the page. It is a demonstration as much as an essay — a PDF edition designed to show how Akshara handles documents that were not built as ebooks.</p>
+    <p>The text was set in Literata, with Fraunces for display and Inter for labels. The page is six by nine inches. The margins are generous because margins are part of the reading. There are no advertisements, no progress bars, no notifications. There is only the book and the time you have given it.</p>
+    <p>If you have read this far, thank you. The quiet hours are not a technique. They are a place. You are welcome here.</p>
+    <div class="ornament">· · ·</div>
+    <p style="text-align:center"><em>Every letter opens a new world.</em></p>
+    <div class="folio">11</div>
+  </section>
+
+  <!-- Back cover -->
+  <section class="page back-cover">
+    <div class="meta"><span class="gold">Akshara Companions</span> · No. 01</div>
+    <div class="blurb">“Do not ask what you<br/>should remember.<br/>Ask what you would<br/>like to meet again.”</div>
+    <div class="meta">
+      The Quiet Hours<br/>
+      Notes on reading well<br/>
+      <span class="gold">akshara · 2026</span>
+    </div>
+  </section>
+</body>
+</html>

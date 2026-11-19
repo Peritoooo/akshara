@@ -1,0 +1,445 @@
+/* Reader-specific atmosphere. Kept separate from the application chrome. */
+
+[data-reader-theme="light"] {
+  --reader-bg: #f7f5f0;
+  --reader-surface: #efeae1;
+  --reader-surface-strong: #e5ded2;
+  --reader-ink: #2a2621;
+  --reader-ink-soft: #5c554b;
+  --reader-muted: #8b8174;
+  --reader-line: #ddd3c4;
+  --reader-accent: #8a6d43;
+  --reader-glow: rgb(182 154 105 / 0.14);
+}
+
+[data-reader-theme="sepia"] {
+  --reader-bg: #f2e7d3;
+  --reader-surface: #eadcc5;
+  --reader-surface-strong: #e0cfb4;
+  --reader-ink: #3a2f22;
+  --reader-ink-soft: #6a5943;
+  --reader-muted: #8f7b61;
+  --reader-line: #d8c5a8;
+  --reader-accent: #8a6535;
+  --reader-glow: rgb(138 101 53 / 0.12);
+}
+
+[data-reader-theme="dark"] {
+  --reader-bg: #17191b;
+  --reader-surface: #202326;
+  --reader-surface-strong: #292d30;
+  --reader-ink: #e9e5dd;
+  --reader-ink-soft: #bdb8ae;
+  --reader-muted: #918d85;
+  --reader-line: #32373b;
+  --reader-accent: #c6a978;
+  --reader-glow: rgb(198 169 120 / 0.1);
+}
+
+.reader-body {
+  background-color: var(--reader-bg);
+  color: var(--reader-ink);
+}
+
+.reader-chrome {
+  background-color: color-mix(in srgb, var(--reader-bg) 88%, transparent);
+  border-color: var(--reader-line);
+  color: var(--reader-ink);
+  backdrop-filter: blur(20px) saturate(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
+}
+
+.reader-panel {
+  background-color: var(--reader-surface);
+  border-color: var(--reader-line);
+  color: var(--reader-ink);
+}
+
+.reader-muted {
+  color: var(--reader-muted);
+}
+
+.reader-button {
+  color: var(--reader-ink-soft);
+  border: 1px solid transparent;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.reader-button:hover {
+  background-color: var(--reader-surface);
+  color: var(--reader-ink);
+}
+
+.reader-button:disabled {
+  opacity: 0.35;
+}
+
+.reader-button[data-active="true"] {
+  background-color: var(--reader-surface);
+  color: var(--reader-ink);
+}
+
+.reader-divider {
+  background-color: var(--reader-line);
+}
+
+.reader-progress-track {
+  background-color: var(--reader-line);
+}
+
+.reader-progress-fill {
+  background-color: var(--reader-accent);
+}
+
+.reader-highlight {
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.reader-highlight-gold {
+  background-color: rgb(200 170 105 / 0.35);
+}
+
+.reader-highlight-sage {
+  background-color: rgb(127 154 116 / 0.3);
+}
+
+.reader-highlight-rose {
+  background-color: rgb(186 125 125 / 0.3);
+}
+
+.reader-highlight-sky {
+  background-color: rgb(124 154 184 / 0.3);
+}
+
+.epub-selection-popover {
+  animation: reader-fade 0.22s ease both;
+}
+
+.reader-fade {
+  animation: reader-fade 0.4s ease both;
+}
+
+.reader-spread {
+  max-width: var(--reader-width, 720px);
+  margin-inline: auto;
+}
+
+.reader-page-enter {
+  animation: reader-fade 0.35s ease both;
+}
+
+.reader-ornament {
+  color: var(--reader-accent);
+}
+
+[data-reading-fullscreen="true"] .reader-topbar {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-reading-fullscreen="true"][data-chrome-visible="true"] .reader-topbar {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+[data-reading-fullscreen="true"] .reader-bottombar {
+  transform: translateY(100%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+[data-reading-fullscreen="true"][data-chrome-visible="true"] .reader-bottombar {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.reader-topbar,
+.reader-bottombar {
+  transition:
+    transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1),
+    opacity 0.35s ease;
+}
+
+.reader-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.reader-scroll::-webkit-scrollbar-thumb {
+  background: var(--reader-line);
+  border-radius: 999px;
+}
+
+/* Reading stage: chrome floats above the page; padding keeps text clear. */
+.reader-stage {
+  background-color: var(--reader-bg);
+  padding-block: 3.5rem 4.25rem;
+  transition: padding 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+@media (min-width: 640px) {
+  .reader-stage {
+    padding-block: 4rem 4.75rem;
+  }
+}
+
+[data-reading-fullscreen="true"] .reader-stage {
+  padding-block: 0.75rem 1rem;
+}
+
+.reader-epub,
+.reader-epub > div,
+.reader-epub iframe {
+  width: 100%;
+  height: 100%;
+}
+
+.reader-epub iframe {
+  border: 0;
+  display: block;
+  background-color: var(--reader-bg);
+}
+
+/* Invisible page-turn strips, only where a pointer cannot select text. */
+.reader-edge {
+  display: none;
+}
+
+@media (hover: none) {
+  .reader-edge {
+    position: absolute;
+    top: 4rem;
+    bottom: 4.5rem;
+    z-index: 10;
+    display: block;
+    width: 8%;
+    background: transparent;
+  }
+
+  .reader-edge-left {
+    left: 0;
+  }
+
+  .reader-edge-right {
+    right: 0;
+  }
+}
+
+/* Progress controls */
+.reader-seek,
+.reader-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 14px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.reader-seek::-webkit-slider-runnable-track,
+.reader-range::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--reader-accent) var(--seek, 0%),
+    var(--reader-line) var(--seek, 0%)
+  );
+}
+
+.reader-range::-webkit-slider-runnable-track {
+  height: 3px;
+}
+
+.reader-seek::-webkit-slider-thumb,
+.reader-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 11px;
+  width: 11px;
+  margin-top: -4.5px;
+  border-radius: 50%;
+  border: 2px solid var(--reader-bg);
+  background: var(--reader-accent);
+  box-shadow: 0 0 0 1px var(--reader-line);
+  transition: transform 0.15s ease;
+}
+
+.reader-range::-webkit-slider-thumb {
+  height: 14px;
+  width: 14px;
+  margin-top: -5.5px;
+}
+
+.reader-seek:hover::-webkit-slider-thumb,
+.reader-range:hover::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+
+.reader-seek::-moz-range-track,
+.reader-range::-moz-range-track {
+  height: 2px;
+  border-radius: 999px;
+  background: var(--reader-line);
+}
+
+.reader-range::-moz-range-track {
+  height: 3px;
+}
+
+.reader-seek::-moz-range-progress,
+.reader-range::-moz-range-progress {
+  height: 2px;
+  border-radius: 999px;
+  background: var(--reader-accent);
+}
+
+.reader-seek::-moz-range-thumb,
+.reader-range::-moz-range-thumb {
+  height: 9px;
+  width: 9px;
+  border-radius: 50%;
+  border: 2px solid var(--reader-bg);
+  background: var(--reader-accent);
+  box-shadow: 0 0 0 1px var(--reader-line);
+}
+
+.reader-range::-moz-range-thumb {
+  height: 12px;
+  width: 12px;
+}
+
+/* Panels */
+@keyframes reader-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.reader-panel-enter {
+  animation: reader-slide-in 0.3s cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.reader-backdrop {
+  background-color: rgb(23 20 16 / 0.32);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: reader-fade 0.25s ease both;
+}
+
+.dark .reader-backdrop {
+  background-color: rgb(0 0 0 / 0.52);
+}
+
+/* PDF pages are painted white by design, so they are tinted into the reading
+   palette: multiply blending turns paper-white into the theme's page stock and
+   keeps the printed ink dark. Night inverts the page instead.
+   "original" in preferences.pdfPages leaves the page untouched. */
+[data-pdf-pages="theme"][data-reader-theme="light"] .reader-pdf-canvas,
+[data-pdf-pages="theme"][data-reader-theme="sepia"] .reader-pdf-canvas {
+  /* Lift the printed paper to pure white first, so multiply lands exactly on
+     the desk colour and no page edge shows. */
+  filter: brightness(1.05);
+  mix-blend-mode: multiply;
+}
+
+[data-pdf-pages="theme"][data-reader-theme="dark"] .reader-pdf-canvas {
+  /* White paper maps to the Night background, so the page has no visible edge. */
+  filter: brightness(1.05) invert(0.91);
+}
+
+/* A quiet desk surface around the PDF page. */
+.reader-pdf-stage {
+  background: var(--reader-bg);
+}
+
+.reader-pdf-frame {
+  /* Same stock as the desk, so the page has no visible edge. */
+  background-color: var(--reader-bg);
+  overflow: hidden;
+  animation: reader-fade 0.3s ease both;
+}
+
+.reader-pdf-canvas {
+  display: block;
+}
+
+/* Invisible text layer: selectable text sitting over the rendered page. */
+.reader-pdf-textlayer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  overflow: clip;
+  line-height: 1;
+  text-align: initial;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+}
+
+.reader-pdf-textlayer :is(span, br) {
+  position: absolute;
+  color: transparent;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+}
+
+.reader-pdf-textlayer span.markedContent {
+  top: 0;
+  height: 0;
+}
+
+.reader-pdf-textlayer span[role="img"] {
+  user-select: none;
+  cursor: default;
+}
+
+.reader-pdf-textlayer ::selection {
+  background: color-mix(in srgb, var(--reader-accent) 38%, transparent);
+}
+
+.reader-pdf-highlights {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.reader-pdf-highlight {
+  position: absolute;
+  pointer-events: auto;
+  border: 0;
+  padding: 0;
+  border-radius: 2px;
+  opacity: 0.38;
+  cursor: pointer;
+  transition: opacity 120ms ease;
+}
+
+.reader-pdf-highlight:hover {
+  opacity: 0.58;
+}
+
+.reader-pdf-scrim {
+  background-color: color-mix(in srgb, var(--reader-bg) 82%, transparent);
+}
+
+@media (max-width: 639px) {
+  .reader-panel-enter {
+    animation-name: reader-fade;
+  }
+}
+

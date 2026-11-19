@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+dist-ssr/
+
+# Hosting
+.vercel/
+.netlify/
+
+# Local environment
+.env
+.env.local
+.env.*.local
+
+# Logs and temp files
+*.log
+npm-debug.log*
+.tmp/
+*.tmp.*
+tmp/
+
+# Editor and OS noise
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Test artifacts
+coverage/
+test-results/
+playwright-report/
