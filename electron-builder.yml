@@ -1,0 +1,56 @@
+appId: app.akshara.reader
+productName: Akshara
+copyright: Copyright © 2026 Akshara
+
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**/*
+  - electron/**/*
+  - package.json
+  - "!**/*.map"
+  - "!node_modules/**"
+
+asar: true
+compression: normal
+
+linux:
+  target:
+    - deb
+    - AppImage
+  category: Office
+  icon: build/icon.png
+  maintainer: Peritooo <prabeshkharel61@gmail.com>
+  vendor: Akshara
+  synopsis: A calm, local-first PDF reader
+  description: >-
+    Akshara is a local-first reading app. Import your own PDFs and read them in a
+    warm, distraction-free reader that follows your system theme. Books never leave
+    your device.
+  desktop:
+    Name: Akshara
+    GenericName: Document Reader
+    Comment: Read your PDFs in a calm, theme-aware reader
+    Categories: Office;Viewer;
+    Keywords: pdf;reader;ebook;library;
+    StartupWMClass: Akshara
+
+deb:
+  priority: optional
+  depends:
+    - libgtk-3-0 | libgtk-3-0t64
+    - libnotify4 | libnotify4t64
+    - libnss3
+    - libxss1
+    - libxtst6 | libxtst6t64
+    - xdg-utils
+    - libatspi2.0-0 | libatspi2.0-0t64
+    - libuuid1
+    - libsecret-1-0 | libsecret-1-0t64
+
+appImage:
+  artifactName: ${productName}-${version}-${arch}.${ext}
+
+publish: null

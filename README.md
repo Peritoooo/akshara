@@ -36,6 +36,25 @@ npm run build
 npm run preview
 ```
 
+## Desktop application
+
+Akshara also ships as a native desktop app (Electron). It runs the same reader
+fully offline in its own window, with a stable app origin for local storage.
+
+```bash
+npm run app:start   # build + launch the desktop app
+npm run app:dist    # build installers into release/
+```
+
+On Linux this produces:
+
+- `release/akshara_0.1.0_amd64.deb` — install with `sudo apt install ./release/akshara_0.1.0_amd64.deb`
+- `release/Akshara-0.1.0-x86_64.AppImage` — portable build (Ubuntu 24.04+ needs
+  `libfuse2t64`; the `.deb` is the safer choice)
+
+Desktop reading data lives in `~/.config/akshara` (its own profile), so the app's
+library is separate from any browser tab you used during development.
+
 ## Smoke tests
 
 The Playwright smoke suite covers the main routes, the import empty states, importing a

@@ -4,12 +4,17 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Akshara — a modern digital reading platform. Every letter opens a new world.",
+  "author": "Peritooo <prabeshkharel61@gmail.com>",
+  "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
-    "test:smoke": "node --test tests/smoke.test.mjs"
+    "test:smoke": "node --test tests/smoke.test.mjs",
+    "app:start": "npm run build && electron .",
+    "app:dir": "npm run build && electron-builder --linux --dir",
+    "app:dist": "npm run build && electron-builder --linux"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",
@@ -39,6 +44,8 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^6.3.0",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
     "playwright-core": "^1.65.1",
     "tailwindcss": "^4.3.5",
     "typescript": "~5.9.3",
