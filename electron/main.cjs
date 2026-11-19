@@ -229,6 +229,11 @@ if (!gotLock) {
   });
 
   app.setName("Akshara");
+  if (process.platform === "linux") {
+    // Associate the window with akshara.desktop so the dock and app grid show
+    // the Akshara icon instead of a generic Electron window.
+    app.setDesktopName("akshara.desktop");
+  }
 
   app.whenReady().then(() => {
     registerAppProtocol();
