@@ -15,6 +15,7 @@ files:
 
 asar: true
 compression: normal
+afterPack: scripts/after-pack.cjs
 
 linux:
   target:
