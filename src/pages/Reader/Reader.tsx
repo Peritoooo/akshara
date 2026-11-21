@@ -12,13 +12,16 @@ import {
   Feather,
   Loader2,
   RefreshCw,
+  Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useBook } from "@/hooks/useCatalog";
 import { useLibraryStore } from "@/store/library";
+import { useSessionStore } from "@/store/session";
 import { useSettingsStore } from "@/store/settings";
 import { useResolvedTheme } from "@/hooks/useTheme";
 import { useReadingSession } from "@/hooks/useReadingSession";
+import { savePdfFile } from "@/lib/pdfStore";
 import { cn, percentLabel } from "@/lib/utils";
 import { Dialog } from "@/components/ui/Dialog";
 import { TextArea } from "@/components/ui/Field";
@@ -74,6 +77,7 @@ export function ReaderPage() {
 
   const preferences = useSettingsStore((state) => state.reader);
   const setReader = useSettingsStore((state) => state.setReader);
+  const signedIn = useSessionStore((state) => state.phase === "authenticated");
 
   // "follow" keeps the reading room in step with the website theme.
   const readerTheme: ReaderTheme =
@@ -119,6 +123,9 @@ export function ReaderPage() {
   const [editNote, setEditNote] = useState("");
   const [epoch, setEpoch] = useState(0);
   const [showFocusHint, setShowFocusHint] = useState(false);
+  const [attaching, setAttaching] = useState(false);
+
+  const attachInputRef = useRef<HTMLInputElement>(null);
 
   const viewRef = useRef<ReaderViewHandle>(null);
 
@@ -411,6 +418,28 @@ export function ReaderPage() {
     setEpoch((current) => current + 1);
   }, []);
 
+  /** Sync brought this book here, but its PDF only exists where it was imported. */
+  const handleAttachPdf = useCallback(
+    async (file: File | undefined) => {
+      if (!file || !book) return;
+      setAttaching(true);
+      try {
+        await savePdfFile(book.id, file);
+        toast.success("PDF attached to this book", {
+          description: `${book.title} · your place and notes are kept.`,
+        });
+        handleRetry();
+      } catch {
+        toast.error("That PDF could not be stored on this device", {
+          description: "It may be larger than the space available here.",
+        });
+      } finally {
+        setAttaching(false);
+      }
+    },
+    [book, handleRetry],
+  );
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
@@ -568,6 +597,31 @@ export function ReaderPage() {
                   <RefreshCw className="h-3.5 w-3.5" />
                   Try again
                 </button>
+                {book?.custom ? (
+                  <button
+                    type="button"
+                    onClick={() => attachInputRef.current?.click()}
+                    disabled={attaching}
+                    className="inline-flex h-10 items-center gap-2 rounded-full border border-[var(--reader-line)] px-5 text-sm font-medium text-[var(--reader-ink)] disabled:opacity-60"
+                  >
+                    {attaching ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Upload className="h-3.5 w-3.5" />
+                    )}
+                    Attach the PDF
+                  </button>
+                ) : null}
+                <input
+                  ref={attachInputRef}
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="sr-only"
+                  onChange={(event) => {
+                    void handleAttachPdf(event.target.files?.[0]);
+                    event.target.value = "";
+                  }}
+                />
                 <button
                   type="button"
                   onClick={handleBack}
@@ -885,7 +939,9 @@ export function ReaderPage() {
               aria-label="Highlight note"
             />
             <p className="mt-2 text-[0.625rem] text-ink-muted">
-              Highlights and notes live in this browser. Nothing is uploaded.
+              {signedIn
+                ? "Highlights and notes sync to your account. PDF files stay on this device."
+                : "Highlights and notes live in this browser. Nothing is uploaded."}
             </p>
           </div>
         ) : null}

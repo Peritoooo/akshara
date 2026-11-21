@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router-dom";
+import { useSessionStore } from "@/store/session";
 import { Sidebar } from "./Sidebar";
 import { MobileHeader, MobileTabBar } from "./MobileNav";
 
@@ -13,6 +14,7 @@ function ScrollToTop() {
 
 export function AppShell() {
   const { pathname } = useLocation();
+  const signedIn = useSessionStore((state) => state.phase === "authenticated");
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -39,7 +41,7 @@ export function AppShell() {
               Every letter opens a new world.
             </p>
             <p className="text-[0.625rem] uppercase tracking-[0.14em] text-ink-muted">
-              Your library · Stored on this device
+              {signedIn ? "Your library · Synced to your account" : "Your library · Stored on this device"}
             </p>
           </div>
         </footer>

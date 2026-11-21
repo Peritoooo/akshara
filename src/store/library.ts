@@ -79,6 +79,9 @@ const initialData = () => ({
   customBooks: [] as Book[],
 });
 
+/** A fresh, empty library. Used when a different account signs in. */
+export const emptyLibraryState = () => initialData();
+
 const now = () => new Date().toISOString();
 
 const clamp = (value: number) => Math.min(1, Math.max(0, value));

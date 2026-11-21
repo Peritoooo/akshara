@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLibraryStore } from "@/store/library";
+import { useSessionStore } from "@/store/session";
 import { useSettingsStore } from "@/store/settings";
 import { getCollectionCount } from "@/lib/stats";
 import { cn } from "@/lib/utils";
@@ -35,6 +36,8 @@ export function Sidebar() {
   const collections = useLibraryStore((state) => state.collections);
   const createCollection = useLibraryStore((state) => state.createCollection);
   const displayName = useSettingsStore((state) => state.displayName);
+  const email = useSessionStore((state) => state.email);
+  const signedIn = useSessionStore((state) => state.phase === "authenticated");
   const favoriteCount = Object.values(entries).filter((entry) => entry.favorite).length;
   const [newCollectionOpen, setNewCollectionOpen] = useState(false);
   const [collectionName, setCollectionName] = useState("");
@@ -162,7 +165,9 @@ export function Sidebar() {
             <span className="block truncate text-[0.75rem] font-medium text-ink">
               {displayName}
             </span>
-            <span className="block text-[0.625rem] text-ink-muted">Local library</span>
+            <span className="block truncate text-[0.625rem] text-ink-muted">
+              {signedIn ? (email ?? "Synced account") : "Local library"}
+            </span>
           </span>
           <IconButton label="Open settings" size="sm" className="text-ink-muted">
             <Settings className="h-3.5 w-3.5" />

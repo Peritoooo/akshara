@@ -34,6 +34,9 @@ create table if not exists public.books (
   publisher text not null default '',
   cover jsonb,
   motif text,
+  -- Cover thumbnail (data URL) so a synced shelf looks right before the PDF
+  -- is re-attached on this device. Null for books without one.
+  cover_image text,
   added_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   deleted_at timestamptz,
@@ -93,20 +96,23 @@ create table if not exists public.bookmarks (
 );
 
 create table if not exists public.collections (
-  id uuid primary key default gen_random_uuid(),
+  -- Client-generated slugs ("rainy-afternoons-lx3k"), not UUIDs.
+  id text not null,
   user_id uuid not null references auth.users (id) on delete cascade,
   name text not null,
   description text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  deleted_at timestamptz
+  deleted_at timestamptz,
+  primary key (user_id, id)
 );
 
 create table if not exists public.collection_books (
   user_id uuid not null references auth.users (id) on delete cascade,
-  collection_id uuid not null,
+  collection_id text not null,
   book_id text not null,
   created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
   deleted_at timestamptz,
   primary key (user_id, collection_id, book_id)
 );
@@ -118,6 +124,7 @@ create table if not exists public.reading_sessions (
   started_at timestamptz not null default now(),
   minutes real not null default 0 check (minutes >= 0),
   created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
   deleted_at timestamptz
 );
 
@@ -153,7 +160,8 @@ declare
 begin
   foreach t in array array[
     'profiles', 'books', 'library_entries', 'reading_positions',
-    'highlights', 'bookmarks', 'collections'
+    'highlights', 'bookmarks', 'collections', 'collection_books',
+    'reading_sessions'
   ] loop
     execute format('drop trigger if exists %I_touch on public.%I', t, t);
     execute format(

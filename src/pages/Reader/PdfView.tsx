@@ -275,7 +275,7 @@ export const PdfView = forwardRef<ReaderViewHandle, ReaderViewProps>(
             error instanceof Error ? error.message : "Unknown PDF error";
           if (message === "missing-local-pdf") {
             onErrorRef.current(
-              "This imported PDF is no longer stored in this browser. Add it again from your library.",
+              "This PDF is not stored on this device. Attach the file here to keep reading — your place, notes, and highlights are kept.",
             );
           } else {
             onErrorRef.current(

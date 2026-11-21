@@ -1,11 +1,15 @@
 import { useMemo, useState } from "react";
 import {
   Check,
+  Cloud,
+  CloudOff,
   Download,
   KeyRound,
   Laptop,
+  LogOut,
   Monitor,
   Moon,
+  RefreshCw,
   RotateCcw,
   Save,
   Sun,
@@ -14,9 +18,12 @@ import {
 import { toast } from "sonner";
 import { seedSettings } from "@/data/seed";
 import { useLibraryStore } from "@/store/library";
+import { useSessionStore } from "@/store/session";
 import { useSettingsStore } from "@/store/settings";
 import type { AppTheme, ReaderFont, ReaderThemeChoice } from "@/types";
 import { cn } from "@/lib/utils";
+import { describeSync, useSyncStatus } from "@/lib/syncStatus";
+import { syncNow } from "@/lib/sync";
 import { Avatar } from "@/components/ui/Misc";
 import { Button, IconButton } from "@/components/ui/Button";
 import { LogoMark } from "@/components/layout/LogoMark";
@@ -123,6 +130,13 @@ export function SettingsPage() {
   const settings = useSettingsStore();
   const resolvedTheme = useResolvedTheme();
   const resetDemo = useLibraryStore((state) => state.resetDemo);
+  const session = useSessionStore();
+  const syncPhase = useSyncStatus((state) => state.phase);
+  const syncPending = useSyncStatus((state) => state.pending);
+  const lastSyncedAt = useSyncStatus((state) => state.lastSyncedAt);
+  const syncError = useSyncStatus((state) => state.error);
+  const signedIn = session.phase === "authenticated";
+  const [syncing, setSyncing] = useState(false);
   const storageSize = useMemo(() => {
     try {
       const payload = Object.keys(localStorage)
@@ -137,6 +151,7 @@ export function SettingsPage() {
 
   const [name, setName] = useState(settings.displayName);
   const [resetOpen, setResetOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
 
   const saveName = () => {
     settings.setDisplayName(name);
@@ -189,6 +204,31 @@ export function SettingsPage() {
     });
   };
 
+  const handleSyncNow = async () => {
+    setSyncing(true);
+    const result = await syncNow();
+    setSyncing(false);
+    if (result.ok) {
+      toast.success("Library is up to date");
+    } else {
+      toast.error("Could not sync yet", {
+        description: result.message,
+      });
+    }
+  };
+
+  const handleSignOut = async () => {
+    const result = await session.signOut();
+    if (!result.ok) {
+      toast.error("Still signed in", { description: result.message });
+      return;
+    }
+    setSignOutOpen(false);
+    toast("Signed out", {
+      description: "Your library stays safely on your account.",
+    });
+  };
+
   const marginLabel = ["Narrow", "Regular", "Generous"][settings.reader.margin - 1] ?? "Regular";
 
   return (
@@ -200,11 +240,84 @@ export function SettingsPage() {
         </h1>
         <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-muted">
           Appearance, reading preferences, and the small details that make a library
-          feel like your own. Everything is stored on this device.
+          feel like your own.
+          {signedIn
+            ? " Your reading metadata syncs to your account; PDF files stay on this device."
+            : " Everything is stored on this device."}
         </p>
       </header>
 
       <div className="mt-9">
+        {signedIn ? (
+          <SettingSection
+            eyebrow="Account"
+            title="Signed in and in step"
+            description="Progress, highlights, bookmarks, collections, and reading sessions follow you to every device."
+          >
+            <div className="rounded-xl border border-line bg-surface p-5">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <Avatar name={settings.displayName} className="h-11 w-11 text-sm" />
+                  <div className="min-w-0">
+                    <p className="truncate text-[0.8rem] font-medium text-ink">
+                      {settings.displayName}
+                    </p>
+                    <p className="truncate text-[0.68rem] text-ink-muted">
+                      {session.email}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void handleSyncNow()}
+                    disabled={syncing || syncPhase === "syncing"}
+                  >
+                    <RefreshCw
+                      className={cn("h-3.5 w-3.5", (syncing || syncPhase === "syncing") && "animate-spin")}
+                    />
+                    Sync now
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setSignOutOpen(true)}
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    Sign out
+                  </Button>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+                <p className="flex items-center gap-2 text-[0.7rem] text-ink-muted">
+                  {syncPhase === "offline" || syncPhase === "error" ? (
+                    <CloudOff className="h-3.5 w-3.5 text-rose" />
+                  ) : (
+                    <Cloud className="h-3.5 w-3.5 text-accent-strong" />
+                  )}
+                  {describeSync(syncPhase, syncPending, lastSyncedAt)}
+                  {lastSyncedAt ? (
+                    <span className="text-ink-muted/80">
+                      · {new Date(lastSyncedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  ) : null}
+                </p>
+                <p className="text-[0.65rem] text-ink-muted">
+                  PDF files never leave this device.
+                </p>
+              </div>
+
+              {syncError && (syncPhase === "error" || syncPhase === "offline") ? (
+                <p className="mt-3 rounded-lg border border-rose/25 bg-rose/5 px-3 py-2 text-[0.68rem] leading-relaxed text-rose">
+                  {syncError}
+                </p>
+              ) : null}
+            </div>
+          </SettingSection>
+        ) : null}
+
         <SettingSection
           eyebrow="Appearance"
           title="The room around the books"
@@ -293,7 +406,11 @@ export function SettingsPage() {
               <Avatar name={name || "Reader"} className="h-12 w-12 text-base" />
               <div>
                 <p className="text-[0.75rem] text-ink">Your bookplate</p>
-                <p className="text-[0.65rem] text-ink-muted">Shown locally on this device</p>
+                <p className="mt-1 text-[0.65rem] text-ink-muted">
+                  {signedIn
+                    ? "Synced to your account"
+                    : "Shown locally on this device"}
+                </p>
               </div>
             </div>
             <div className="flex flex-1 items-end gap-2">
@@ -607,14 +724,20 @@ export function SettingsPage() {
 
         <SettingSection
           eyebrow="Your data"
-          title="Stored on this device"
-          description="Akshara is local-first. Your reading positions, notes, and preferences are kept in this browser."
+          title="Yours to keep"
+          description={
+            signedIn
+              ? "Reading metadata lives on your account and in this browser; PDF files stay on the device that imported them."
+              : "Akshara is local-first. Your reading positions, notes, and preferences are kept in this browser."
+          }
           last
         >
           <div className="rounded-xl border border-line bg-surface p-5">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <p className="text-[0.8rem] font-medium text-ink">Local library data</p>
+                <p className="text-[0.8rem] font-medium text-ink">
+                  {signedIn ? "Library stored on this device" : "Local library data"}
+                </p>
                 <p className="mt-1 text-[0.68rem] text-ink-muted">
                   {Object.keys(useLibraryStore.getState().entries).length} books · {storageSize} stored
                 </p>
@@ -632,9 +755,9 @@ export function SettingsPage() {
             </div>
             <div className="mt-4 border-t border-line pt-4">
               <p className="text-[0.65rem] leading-relaxed text-ink-muted">
-                Your library holds only the books you import. Everything stays on this
-                device — there is no account, server, or cloud sync. Export a copy
-                before clearing this browser's data.
+                {signedIn
+                  ? "Clearing this browser's data removes the local copy of your metadata and your imported PDFs. Your account copy is pulled back the next time you sign in, but PDFs must be imported again on this device."
+                  : "Your library holds only the books you import. Everything stays on this device — there is no account, server, or cloud sync. Export a copy before clearing this browser's data."}
               </p>
             </div>
           </div>
@@ -642,8 +765,9 @@ export function SettingsPage() {
           <div className="mt-4 flex items-start gap-2.5 text-[0.65rem] leading-relaxed text-ink-muted">
             <Trash2 className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             <p>
-              Reset clears your library, collections, highlights, and reading
-              sessions. It cannot be undone.
+              {signedIn
+                ? "Resetting removes this library from your account too — on every device. It cannot be undone."
+                : "Reset clears your library, collections, highlights, and reading sessions. It cannot be undone."}
             </p>
           </div>
         </SettingSection>
@@ -694,6 +818,36 @@ export function SettingsPage() {
             first if you would like to keep them.
           </p>
         </div>
+      </Dialog>
+
+      <Dialog
+        open={signOutOpen}
+        onOpenChange={setSignOutOpen}
+        title="Sign out of this device?"
+        description="Your library stays on your account. This device keeps the PDF files, so signing back in restores your place without re-importing them."
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setSignOutOpen(false)}
+              className="h-9 rounded-full px-4 text-[0.8125rem] font-medium text-ink-soft transition-colors hover:bg-muted hover:text-ink"
+            >
+              Stay signed in
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleSignOut()}
+              className="h-9 rounded-full bg-ink px-4 text-[0.8125rem] font-medium text-canvas transition-opacity hover:opacity-90"
+            >
+              Sign out
+            </button>
+          </>
+        }
+      >
+        <p className="text-[0.75rem] leading-relaxed text-ink-muted">
+          Any changes still waiting to reach the server are sent first. If you are
+          offline, sign-out waits so nothing is lost.
+        </p>
       </Dialog>
     </div>
   );
