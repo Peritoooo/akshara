@@ -1081,9 +1081,17 @@ export function stopSync() {
 
 /** Push anything queued. Returns how many changes are still waiting. */
 export async function flushPending(): Promise<number> {
-  if (!engine) return 0;
-  await flush(engine);
-  return Object.keys(engine.meta.pending).length;
+  const active = engine;
+  if (!active) return 0;
+
+  // Sign-out and account deletion must not race an in-flight pull or push:
+  // give it a moment to finish, then send whatever is still queued.
+  for (let attempt = 0; attempt < 50 && active.busy; attempt += 1) {
+    await new Promise((resolve) => window.setTimeout(resolve, 100));
+  }
+
+  await flush(active);
+  return Object.keys(active.meta.pending).length;
 }
 
 /** Pull, then push. Used by the "Sync now" action. */

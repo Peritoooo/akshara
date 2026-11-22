@@ -54,7 +54,11 @@ export const useSessionStore = create<SessionState>()(() => ({
     // Another account (or the local-only app) must never see this library.
     useLibraryStore.setState(emptyLibraryState());
     clearDeviceProfile();
-    await supabase?.auth.signOut();
+    try {
+      await supabase?.auth.signOut();
+    } catch {
+      // The local session is already cleared; the server call is best-effort.
+    }
     return { ok: true };
   },
 
@@ -89,7 +93,12 @@ export const useSessionStore = create<SessionState>()(() => ({
     useLibraryStore.setState(emptyLibraryState());
     await clearPdfFiles();
     clearDeviceProfile();
-    await supabase.auth.signOut({ scope: "local" });
+    try {
+      // The user no longer exists, so this only clears local tokens.
+      await supabase.auth.signOut({ scope: "local" });
+    } catch {
+      // Already signed out on the server side.
+    }
     return { ok: true };
   },
 }));
