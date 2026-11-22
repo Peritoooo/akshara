@@ -150,14 +150,17 @@ function readMeta(userId: string): SyncMeta {
   return { userId, base: {}, pending: {} };
 }
 
-function persistMeta(meta: SyncMeta) {
+function persistMeta(active: Engine) {
+  // Sign-out (or another account) may have taken over while a pull or push was
+  // in flight. Never resurrect bookkeeping that was deliberately cleared.
+  if (active.stopped || engine !== active) return;
   try {
     localStorage.setItem(
       STORAGE_KEY,
       JSON.stringify({
-        userId: meta.userId,
-        base: meta.base,
-        pending: meta.pending,
+        userId: active.meta.userId,
+        base: active.meta.base,
+        pending: active.meta.pending,
       }),
     );
   } catch {
@@ -594,13 +597,14 @@ function applyProfile(row: Row) {
 }
 
 async function pullProfile(active: Engine) {
-  if (!supabase) return;
+  if (!supabase || active.stopped) return;
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", active.userId)
     .maybeSingle();
   if (error || !data) return;
+  if (active.stopped || engine !== active) return;
 
   const row = data as Row;
   const remoteTs = str(row, "updated_at");
@@ -662,6 +666,7 @@ async function pushProfile(active: Engine) {
     .select("updated_at")
     .maybeSingle();
   if (error || !data) return;
+  if (active.stopped || engine !== active) return;
   active.profileBase = str(data as Row, "updated_at");
   try {
     localStorage.setItem(PROFILE_STORAGE_KEY, active.profileBase);
@@ -689,7 +694,7 @@ function seedUnpushed(active: Engine) {
     }
   });
   if (touched) {
-    persistMeta(active.meta);
+    persistMeta(active);
     publishStatus({ pending: Object.keys(active.meta.pending).length });
   }
 }
@@ -716,13 +721,14 @@ function detectLocalChanges(active: Engine) {
 
   active.lastRows = rows;
   if (touched) {
-    persistMeta(active.meta);
+    persistMeta(active);
     publishStatus({ pending: Object.keys(active.meta.pending).length });
     schedulePush(active);
   }
 }
 
 function schedulePush(active: Engine) {
+  if (active.stopped) return;
   if (active.pushTimer !== null) window.clearTimeout(active.pushTimer);
   active.pushTimer = window.setTimeout(() => {
     active.pushTimer = null;
@@ -739,12 +745,18 @@ function scheduleProfilePush(active: Engine) {
 }
 
 async function flush(active: Engine): Promise<boolean> {
-  if (!supabase || active.stopped || active.busy) return false;
+  if (!supabase || active.stopped) return false;
 
   const keys = Object.keys(active.meta.pending);
   if (keys.length === 0) {
     publishStatus({ phase: "idle", pending: 0 });
     return true;
+  }
+
+  if (active.busy) {
+    // A pull or push is still in flight; try again once it finishes.
+    schedulePush(active);
+    return false;
   }
 
   if (typeof navigator !== "undefined" && navigator.onLine === false) {
@@ -858,7 +870,7 @@ async function flush(active: Engine): Promise<boolean> {
       }
     }
 
-    persistMeta(active.meta);
+    persistMeta(active);
     publishStatus({
       phase: "idle",
       pending: Object.keys(active.meta.pending).length,
@@ -869,7 +881,7 @@ async function flush(active: Engine): Promise<boolean> {
   } catch (cause) {
     const message =
       cause instanceof Error ? cause.message : "Could not reach the server.";
-    persistMeta(active.meta);
+    persistMeta(active);
     publishStatus({
       phase: navigator.onLine === false ? "offline" : "error",
       pending: Object.keys(active.meta.pending).length,
@@ -939,7 +951,7 @@ async function pull(active: Engine): Promise<boolean> {
     if (active.stopped) return false;
     mergeRemote(active, remote);
     await pullProfile(active);
-    persistMeta(active.meta);
+    persistMeta(active);
 
     publishStatus({
       phase: "idle",

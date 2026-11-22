@@ -19,6 +19,9 @@ const CHROME_CANDIDATES = [
 
 before(async () => {
   server = await createServer({
+    // Smoke tests exercise the local-only app; skip .env.local so a Supabase
+    // project configured for development does not gate the library behind auth.
+    envDir: false,
     server: { host: "127.0.0.1", port: 5199, strictPort: true },
     logLevel: "error",
   });
