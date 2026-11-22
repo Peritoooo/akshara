@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import { useSessionStore } from "@/store/session";
+import { clearLocalAccount, useSessionStore } from "@/store/session";
 
 export interface AuthLink {
   access_token: string;
@@ -31,11 +31,33 @@ export function parseAuthLink(raw: string): AuthLink | null {
   }
 }
 
+/** Reads `sub` from the JWT without verifying it — only used to spot a switch. */
+function subjectOf(accessToken: string): string | null {
+  try {
+    const payload = accessToken.split(".")[1];
+    if (!payload) return null;
+    const json = JSON.parse(
+      atob(payload.replace(/-/g, "+").replace(/_/g, "/")),
+    ) as { sub?: unknown };
+    return typeof json.sub === "string" ? json.sub : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Turns a desktop auth link into a session and opens the recovery screen. */
 export async function adoptAuthLink(raw: string): Promise<boolean> {
   if (!supabase) return false;
   const link = parseAuthLink(raw);
   if (!link) return false;
+
+  // A link can arrive while someone else is signed in on a shared machine.
+  // Never let the previous account's library carry over to the new one.
+  const currentUser = useSessionStore.getState().userId;
+  const linkUser = subjectOf(link.access_token);
+  if (currentUser && linkUser && currentUser !== linkUser) {
+    await clearLocalAccount();
+  }
 
   const { error } = await supabase.auth.setSession({
     access_token: link.access_token,

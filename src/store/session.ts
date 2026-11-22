@@ -34,6 +34,23 @@ function clearDeviceProfile() {
   useSettingsStore.setState({ theme });
 }
 
+/**
+ * Clears the signed-in account's local footprint without touching the server.
+ * PDF files stay in IndexedDB, keyed by book id. Used when an auth link switches
+ * accounts on a shared device.
+ */
+export async function clearLocalAccount(): Promise<void> {
+  stopSync();
+  clearSyncState();
+  useLibraryStore.setState(emptyLibraryState());
+  clearDeviceProfile();
+  try {
+    await supabase?.auth.signOut({ scope: "local" });
+  } catch {
+    // Local tokens are cleared regardless.
+  }
+}
+
 export const useSessionStore = create<SessionState>()(() => ({
   phase: isSupabaseConfigured ? "loading" : "local",
   recovery: false,
