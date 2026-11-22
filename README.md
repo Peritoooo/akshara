@@ -29,6 +29,7 @@ Akshara runs in two modes from the same codebase:
 - Light, dark, and system application themes
 - Optional accounts with email + password, row-level-security isolation, and offline-first
   sync that queues changes and replays them when the connection returns
+- Password reset by email, in-app password change, and permanent account deletion
 
 ## Getting started
 
@@ -62,6 +63,40 @@ dev` keeps working with zero backend.
 The `anon` key is public by design — it ships in the client bundle and row-level
 security protects each account's rows. **Never** put the `service_role` key in the app.
 
+### Redirect URLs
+
+Supabase only sends links to addresses on its allowlist. Add these under
+**Authentication → URL Configuration**:
+
+- **Site URL:** your web origin (for example `https://akshara.vercel.app`)
+- **Redirect URLs:**
+  - `https://akshara.vercel.app` (web password reset)
+  - `akshara://auth/recovery` (desktop password reset)
+  - `http://localhost:5173` (development)
+
+### Email delivery
+
+Password reset and sign-up emails use Supabase's built-in mailer, which is heavily
+rate-limited (a few messages per hour). Before inviting real readers, connect a
+transactional provider under **Authentication → Emails → SMTP Settings** and verify the
+sender domain. Until then, add accounts manually from **Authentication → Users** with
+**Auto Confirm User** enabled.
+
+### Password reset
+
+- **Web:** “Forgot password?” emails a link back to the app; the user chooses a new
+  password there.
+- **Desktop:** the same link opens through the `akshara://` handler. The app registers the
+  scheme at install time, exchanges the link's tokens, and shows the “Choose a new
+  password” screen. A fresh install needs one sign-out/sign-in if the OS has not yet
+  picked up the handler.
+
+### Deleting an account
+
+**Settings → Delete account** calls the `delete_account()` database function, which
+removes the caller's rows and their login in one transaction, then wipes this device's
+library, sync state, and stored PDFs. It cannot be undone.
+
 ### What syncs
 
 | Synced to the account | Stays on the device |
@@ -94,6 +129,43 @@ npm run build
 npm run preview
 ```
 
+## Web hosting (Vercel)
+
+The same build runs as a website. `vercel.json` rewrites every route to `index.html`
+so a refresh on `/library` or `/read/:id` still works.
+
+1. Import the repository at [vercel.com/new](https://vercel.com/new); the Vite preset is
+   detected automatically.
+2. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to **Project → Settings →
+   Environment Variables** for Production and Preview, then redeploy.
+3. Add the deployment origin to Supabase's **Site URL / Redirect URLs** (above).
+
+From the CLI:
+
+```bash
+npx vercel link
+npx vercel env add VITE_SUPABASE_URL production
+npx vercel env add VITE_SUPABASE_ANON_KEY production
+npx vercel --prod
+```
+
+### GitHub sign-in
+
+GitHub OAuth is intentionally off until a web origin exists, because the Electron build
+has to hand the flow to the system browser and receive the callback over `akshara://`.
+When the web app is live:
+
+1. Create an OAuth App at **GitHub → Settings → Developer settings → OAuth Apps**.
+   - Homepage URL: `https://your-app.vercel.app`
+   - Authorization callback URL: `https://<project-ref>.supabase.co/auth/v1/callback`
+2. In Supabase, open **Authentication → Providers → GitHub**, enable it, and paste the
+   client ID and secret.
+3. Add `https://your-app.vercel.app` and `akshara://auth/callback` to the redirect
+   allowlist.
+4. Call `supabase.auth.signInWithOAuth({ provider: "github", options: { redirectTo } })`
+   — with `skipBrowserRedirect: true` in Electron, then open the returned URL with the
+   system browser. The `AuthLinkBridge` already accepts `akshara://auth/callback#…`.
+
 ## Desktop application
 
 Akshara also ships as a native desktop app (Electron). It runs the same reader
@@ -108,8 +180,8 @@ Builds pick up `.env.local`, so the desktop app can sign in to the same account.
 
 On Linux this produces:
 
-- `release/akshara_0.1.0_amd64.deb` — install with `sudo apt install ./release/akshara_0.1.0_amd64.deb`
-- `release/Akshara-0.1.0-x86_64.AppImage` — portable build (Ubuntu 24.04+ needs
+- `release/akshara_0.2.0_amd64.deb` — install with `sudo apt install ./release/akshara_0.2.0_amd64.deb`
+- `release/Akshara-0.2.0-x86_64.AppImage` — portable build (Ubuntu 24.04+ needs
   `libfuse2t64`; the `.deb` is the safer choice)
 
 Desktop reading data lives in `~/.config/akshara` (its own profile), so the app's

@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { seedSettings } from "@/data/seed";
+import { supabase } from "@/lib/supabase";
 import { useLibraryStore } from "@/store/library";
 import { useSessionStore } from "@/store/session";
 import { useSettingsStore } from "@/store/settings";
@@ -152,6 +153,71 @@ export function SettingsPage() {
   const [name, setName] = useState(settings.displayName);
   const [resetOpen, setResetOpen] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [passwordBusy, setPasswordBusy] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteEmail, setDeleteEmail] = useState("");
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const closePassword = () => {
+    setPasswordOpen(false);
+    setNewPassword("");
+    setPasswordConfirm("");
+    setPasswordError(null);
+  };
+
+  const handleChangePassword = async () => {
+    if (!supabase) return;
+    setPasswordError(null);
+    if (newPassword.length < 8) {
+      setPasswordError("Choose a password with at least 8 characters.");
+      return;
+    }
+    if (newPassword !== passwordConfirm) {
+      setPasswordError("Those passwords do not match.");
+      return;
+    }
+
+    setPasswordBusy(true);
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setPasswordBusy(false);
+
+    if (error) {
+      setPasswordError(
+        error.message.toLowerCase().includes("different")
+          ? "Choose a password you have not used on this account before."
+          : error.message,
+      );
+      return;
+    }
+    closePassword();
+    toast.success("Password updated");
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteError(null);
+    if (deleteEmail.trim().toLowerCase() !== (session.email ?? "").toLowerCase()) {
+      setDeleteError("Type the account email exactly as shown to confirm.");
+      return;
+    }
+
+    setDeleteBusy(true);
+    const result = await session.deleteAccount();
+    setDeleteBusy(false);
+
+    if (!result.ok) {
+      setDeleteError(result.message ?? "The account could not be deleted.");
+      return;
+    }
+    setDeleteOpen(false);
+    toast("Account deleted", {
+      description: "Your account, synced rows, and this device's stored PDFs are gone.",
+    });
+  };
 
   const saveName = () => {
     settings.setDisplayName(name);
@@ -309,11 +375,50 @@ export function SettingsPage() {
                 </p>
               </div>
 
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+                <div>
+                  <p className="text-[0.75rem] font-medium text-ink">Account security</p>
+                  <p className="mt-0.5 text-[0.68rem] leading-relaxed text-ink-muted">
+                    Change the password used to sign in on this and other devices.
+                  </p>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setPasswordOpen(true)}
+                >
+                  <KeyRound className="h-3.5 w-3.5" />
+                  Change password
+                </Button>
+              </div>
+
               {syncError && (syncPhase === "error" || syncPhase === "offline") ? (
                 <p className="mt-3 rounded-lg border border-rose/25 bg-rose/5 px-3 py-2 text-[0.68rem] leading-relaxed text-rose">
                   {syncError}
                 </p>
               ) : null}
+
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rose/20 bg-rose/5 px-4 py-3">
+                <div>
+                  <p className="text-[0.75rem] font-medium text-rose">Delete account</p>
+                  <p className="mt-0.5 text-[0.68rem] leading-relaxed text-ink-muted">
+                    Permanently removes your login, every synced row, and the PDFs stored here.
+                  </p>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setDeleteEmail("");
+                    setDeleteError(null);
+                    setDeleteOpen(true);
+                  }}
+                  className="!border-rose/30 !text-rose hover:!bg-rose/10"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete account
+                </Button>
+              </div>
             </div>
           </SettingSection>
         ) : null}
@@ -777,7 +882,7 @@ export function SettingsPage() {
         <div className="flex items-center gap-2">
           <LogoMark className="w-8" />
           <p className="text-[0.65rem] text-ink-muted">
-            Akshara · v0.1 · Every letter opens a new world.
+            Akshara · v0.2 · Every letter opens a new world.
           </p>
         </div>
         <p className="text-[0.6rem] uppercase tracking-[0.14em] text-ink-muted">
@@ -817,6 +922,118 @@ export function SettingsPage() {
             Your current progress and personal notes will be cleared. Export a copy
             first if you would like to keep them.
           </p>
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={passwordOpen}
+        onOpenChange={(open) => {
+          if (!open && !passwordBusy) closePassword();
+        }}
+        title="Change your password"
+        description="You stay signed in here. Use the new password the next time this account signs in."
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={closePassword}
+              disabled={passwordBusy}
+              className="h-9 rounded-full px-4 text-[0.8125rem] font-medium text-ink-soft transition-colors hover:bg-muted hover:text-ink disabled:opacity-60"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleChangePassword()}
+              disabled={passwordBusy}
+              className="h-9 rounded-full bg-ink px-4 text-[0.8125rem] font-medium text-canvas transition-opacity hover:opacity-90 disabled:opacity-60"
+            >
+              {passwordBusy ? "Saving…" : "Save password"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <label className="block">
+            <span className="mb-1.5 block text-[0.7rem] font-medium text-ink-soft">
+              New password
+            </span>
+            <TextInput
+              type="password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              placeholder="At least 8 characters"
+              autoComplete="new-password"
+              minLength={8}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1.5 block text-[0.7rem] font-medium text-ink-soft">
+              Confirm new password
+            </span>
+            <TextInput
+              type="password"
+              value={passwordConfirm}
+              onChange={(event) => setPasswordConfirm(event.target.value)}
+              placeholder="Type it again"
+              autoComplete="new-password"
+              minLength={8}
+            />
+          </label>
+          {passwordError ? (
+            <p role="alert" className="text-[0.72rem] leading-relaxed text-rose">
+              {passwordError}
+            </p>
+          ) : null}
+        </div>
+      </Dialog>
+
+      <Dialog
+        open={deleteOpen}
+        onOpenChange={(open) => {
+          if (!open && !deleteBusy) setDeleteOpen(false);
+        }}
+        title="Delete your account?"
+        description="This cannot be undone. Your login, every synced row, and the PDFs stored on this device are permanently removed."
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setDeleteOpen(false)}
+              disabled={deleteBusy}
+              className="h-9 rounded-full px-4 text-[0.8125rem] font-medium text-ink-soft transition-colors hover:bg-muted hover:text-ink disabled:opacity-60"
+            >
+              Keep my account
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleDeleteAccount()}
+              disabled={deleteBusy || deleteEmail.trim().length === 0}
+              className="h-9 rounded-full bg-rose px-4 text-[0.8125rem] font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              {deleteBusy ? "Deleting…" : "Delete everything"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-3">
+          <p className="text-[0.75rem] leading-relaxed text-ink-muted">
+            Type <strong className="font-medium text-ink">{session.email}</strong> to
+            confirm. If you only want to leave this device, sign out instead — that
+            keeps your account and your books.
+          </p>
+          <TextInput
+            value={deleteEmail}
+            onChange={(event) => setDeleteEmail(event.target.value)}
+            placeholder={session.email}
+            autoComplete="off"
+            spellCheck={false}
+          />
+          {deleteError ? (
+            <p role="alert" className="text-[0.72rem] leading-relaxed text-rose">
+              {deleteError}
+            </p>
+          ) : null}
         </div>
       </Dialog>
 

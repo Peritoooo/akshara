@@ -2,6 +2,11 @@ appId: app.akshara.reader
 productName: Akshara
 copyright: Copyright © 2026 Akshara
 
+protocols:
+  - name: Akshara
+    schemes:
+      - akshara
+
 directories:
   output: release
   buildResources: build
@@ -37,6 +42,7 @@ linux:
     Categories: Office;Viewer;
     Keywords: pdf;reader;ebook;library;
     StartupWMClass: Akshara
+    MimeType: x-scheme-handler/akshara;
 
 deb:
   priority: optional

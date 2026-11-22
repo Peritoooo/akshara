@@ -6,8 +6,9 @@ import { AppShell } from "@/components/layout/AppShell";
 import { LogoMark } from "@/components/layout/LogoMark";
 import { ThemeSync, useResolvedTheme } from "@/hooks/useTheme";
 import { startSync } from "@/lib/sync";
+import { adoptAuthLink, listenForAuthLinks, takePendingAuthLink } from "@/lib/authLink";
 import { initSession, useSessionStore } from "@/store/session";
-import { AuthPage } from "@/pages/Auth";
+import { AuthPage, RecoveryPage } from "@/pages/Auth";
 import { HomePage } from "@/pages/Home";
 import { LibraryPage } from "@/pages/Library";
 import { BookDetailsPage } from "@/pages/BookDetails";
@@ -91,13 +92,43 @@ function SyncBridge() {
   return null;
 }
 
+/** Receives `akshara://` links from the desktop shell (recovery, future OAuth). */
+function AuthLinkBridge() {
+  useEffect(() => {
+    let disposed = false;
+
+    const handle = (url: string) => {
+      void adoptAuthLink(url).then((adopted) => {
+        if (!adopted && !disposed) {
+          // An expired or malformed link: stay on the sign-in screen.
+          console.warn("Ignored an unusable auth link.");
+        }
+      });
+    };
+
+    const unsubscribe = listenForAuthLinks(handle);
+    void takePendingAuthLink().then((url) => {
+      if (url && !disposed) handle(url);
+    });
+
+    return () => {
+      disposed = true;
+      unsubscribe();
+    };
+  }, []);
+
+  return null;
+}
+
 function AuthGate({ children }: { children: React.ReactNode }) {
   const phase = useSessionStore((state) => state.phase);
+  const recovery = useSessionStore((state) => state.recovery);
 
   useEffect(() => {
     void initSession();
   }, []);
 
+  if (recovery) return <RecoveryPage />;
   if (phase === "local") return <>{children}</>;
   if (phase === "loading") return <SessionBoot />;
   if (phase === "anonymous") return <AuthPage />;
@@ -108,6 +139,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <ThemeSync />
+      <AuthLinkBridge />
       <AuthGate>
         <TooltipProvider>
           <SyncBridge />

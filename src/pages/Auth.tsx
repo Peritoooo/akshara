@@ -2,12 +2,21 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Loader2, Lock, Mail, UserRound } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useSessionStore } from "@/store/session";
 import { cn } from "@/lib/utils";
 import { LogoMark } from "@/components/layout/LogoMark";
 import { Button } from "@/components/ui/Button";
 import { TextInput } from "@/components/ui/Field";
 
-type Mode = "signin" | "signup";
+type Mode = "signin" | "signup" | "reset";
+
+/** Desktop builds receive reset links through the `akshara://` handler. */
+function resetRedirect() {
+  if (typeof window === "undefined") return undefined;
+  return window.aksharaDesktop
+    ? "akshara://auth/recovery"
+    : window.location.origin;
+}
 
 function friendlyError(message: string) {
   const text = message.toLowerCase();
@@ -22,6 +31,15 @@ function friendlyError(message: string) {
   }
   if (text.includes("password should be")) {
     return "Choose a password with at least 8 characters.";
+  }
+  if (text.includes("should be different")) {
+    return "Choose a password you have not used on this account before.";
+  }
+  if (text.includes("session") && (text.includes("expired") || text.includes("missing"))) {
+    return "This reset link has expired. Request a new one and try again.";
+  }
+  if (text.includes("reauth") || text.includes("reauthenticate")) {
+    return "For safety, sign in again before changing the password.";
   }
   if (text.includes("rate limit")) {
     return "Too many attempts. Wait a minute and try again.";
@@ -42,7 +60,9 @@ export function AuthPage() {
   const [notice, setNotice] = useState<string | null>(null);
 
   const canSubmit =
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && password.length >= 8;
+    mode === "reset"
+      ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+      : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) && password.length >= 8;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -51,7 +71,19 @@ export function AuthPage() {
     setError(null);
     setNotice(null);
 
-    if (mode === "signup") {
+    if (mode === "reset") {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+        email.trim(),
+        { redirectTo: resetRedirect() },
+      );
+      if (resetError) {
+        setError(friendlyError(resetError.message));
+      } else {
+        setNotice(
+          "If an account exists for that address, a reset link is on its way. Open it on this device to choose a new password.",
+        );
+      }
+    } else if (mode === "signup") {
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: email.trim(),
         password,
@@ -177,12 +209,18 @@ export function AuthPage() {
             </div>
 
             <h2 className="mt-7 font-display text-[1.7rem] leading-tight tracking-[-0.02em] text-ink">
-              {mode === "signin" ? "Welcome back" : "Open your reading room"}
+              {mode === "signin"
+                ? "Welcome back"
+                : mode === "signup"
+                  ? "Open your reading room"
+                  : "Reset your password"}
             </h2>
             <p className="mt-2 text-[0.8rem] leading-relaxed text-ink-muted">
               {mode === "signin"
                 ? "Sign in to bring your library together."
-                : "One account keeps every highlight and page in step."}
+                : mode === "signup"
+                  ? "One account keeps every highlight and page in step."
+                  : "Enter the email on your account and we will send a link to choose a new password."}
             </p>
 
             <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
@@ -224,27 +262,38 @@ export function AuthPage() {
                 </div>
               </label>
 
-              <label className="block">
-                <span className="mb-1.5 flex items-center justify-between text-[0.7rem] font-medium text-ink-soft">
-                  Password
-                  <span className="text-[0.65rem] font-normal text-ink-muted">
-                    at least 8 characters
+              {mode === "reset" ? null : (
+                <label className="block">
+                  <span className="mb-1.5 flex items-center justify-between text-[0.7rem] font-medium text-ink-soft">
+                    Password
+                    <span className="text-[0.65rem] font-normal text-ink-muted">
+                      at least 8 characters
+                    </span>
                   </span>
-                </span>
-                <div className="relative">
-                  <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
-                  <TextInput
-                    type="password"
-                    required
-                    minLength={8}
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                    placeholder="••••••••"
-                    autoComplete={mode === "signin" ? "current-password" : "new-password"}
-                    className="pl-10"
-                  />
-                </div>
-              </label>
+                  <div className="relative">
+                    <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+                    <TextInput
+                      type="password"
+                      required
+                      minLength={8}
+                      value={password}
+                      onChange={(event) => setPassword(event.target.value)}
+                      placeholder="••••••••"
+                      autoComplete={mode === "signin" ? "current-password" : "new-password"}
+                      className="pl-10"
+                    />
+                  </div>
+                  {mode === "signin" ? (
+                    <button
+                      type="button"
+                      onClick={() => switchMode("reset")}
+                      className="mt-1.5 text-[0.7rem] font-medium text-ink-soft underline decoration-line-strong underline-offset-2 transition-colors hover:text-ink"
+                    >
+                      Forgot password?
+                    </button>
+                  ) : null}
+                </label>
+              )}
 
               {error ? (
                 <p
@@ -270,11 +319,19 @@ export function AuthPage() {
                 {busy ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    {mode === "signin" ? "Signing in…" : "Creating account…"}
+                    {mode === "signin"
+                      ? "Signing in…"
+                      : mode === "signup"
+                        ? "Creating account…"
+                        : "Sending link…"}
                   </>
                 ) : (
                   <>
-                    {mode === "signin" ? "Sign in" : "Create account"}
+                    {mode === "signin"
+                      ? "Sign in"
+                      : mode === "signup"
+                        ? "Create account"
+                        : "Send reset link"}
                     <ArrowRight className="h-4 w-4" />
                   </>
                 )}
@@ -282,9 +339,22 @@ export function AuthPage() {
             </form>
 
             <p className="mt-5 text-center text-[0.65rem] leading-relaxed text-ink-muted">
-              {mode === "signin"
-                ? "New here? Create an account — your existing device library joins it."
-                : "By creating an account you agree to keep your password to yourself."}
+              {mode === "signin" ? (
+                "New here? Create an account — your existing device library joins it."
+              ) : mode === "signup" ? (
+                "By creating an account you agree to keep your password to yourself."
+              ) : (
+                <>
+                  Remembered it?{" "}
+                  <button
+                    type="button"
+                    onClick={() => switchMode("signin")}
+                    className="font-medium text-ink-soft underline decoration-line-strong underline-offset-2 transition-colors hover:text-ink"
+                  >
+                    Back to sign in
+                  </button>
+                </>
+              )}
             </p>
           </div>
 
@@ -293,6 +363,157 @@ export function AuthPage() {
               Akshara
             </Link>{" "}
             · Every letter opens a new world.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Shown after a reset link opens the app. The link already signed the user in,
+ * so this only needs to set the new password.
+ */
+export function RecoveryPage() {
+  const email = useSessionStore((state) => state.email);
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const canSubmit = password.length >= 8 && password === confirm;
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!supabase || !canSubmit || busy) return;
+    setBusy(true);
+    setError(null);
+
+    const { error: updateError } = await supabase.auth.updateUser({ password });
+    setBusy(false);
+
+    if (updateError) {
+      setError(friendlyError(updateError.message));
+      return;
+    }
+    useSessionStore.getState().finishRecovery();
+  };
+
+  const cancel = async () => {
+    await useSessionStore.getState().signOut();
+    useSessionStore.getState().finishRecovery();
+  };
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-canvas">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_15%_-10%,var(--accent-soft)_0%,transparent_55%)] opacity-70"
+      />
+      <div className="relative mx-auto flex min-h-screen max-w-[30rem] flex-col justify-center px-6 py-10">
+        <div className="mb-8 flex items-center gap-3">
+          <LogoMark className="w-10" />
+          <div>
+            <p className="text-[0.85rem] font-medium uppercase tracking-[0.24em] text-ink">
+              Akshara
+            </p>
+            <p className="mt-0.5 text-[0.5rem] uppercase tracking-[0.18em] text-ink-muted">
+              Every letter opens a world
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-line bg-surface p-6 shadow-lift sm:p-8">
+          <h1 className="font-display text-[1.7rem] leading-tight tracking-[-0.02em] text-ink">
+            Choose a new password
+          </h1>
+          <p className="mt-2 text-[0.8rem] leading-relaxed text-ink-muted">
+            {email
+              ? `You are resetting the password for ${email}.`
+              : "You are resetting your password."}
+          </p>
+
+          <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
+            <label className="block">
+              <span className="mb-1.5 flex items-center justify-between text-[0.7rem] font-medium text-ink-soft">
+                New password
+                <span className="text-[0.65rem] font-normal text-ink-muted">
+                  at least 8 characters
+                </span>
+              </span>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+                <TextInput
+                  type="password"
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  className="pl-10"
+                />
+              </div>
+            </label>
+
+            <label className="block">
+              <span className="mb-1.5 block text-[0.7rem] font-medium text-ink-soft">
+                Confirm new password
+              </span>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+                <TextInput
+                  type="password"
+                  required
+                  minLength={8}
+                  value={confirm}
+                  onChange={(event) => setConfirm(event.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                  className="pl-10"
+                />
+              </div>
+            </label>
+
+            {password.length > 0 && confirm.length > 0 && password !== confirm ? (
+              <p className="text-[0.72rem] leading-relaxed text-rose">
+                Those passwords do not match yet.
+              </p>
+            ) : null}
+
+            {error ? (
+              <p
+                role="alert"
+                className="rounded-xl border border-rose/25 bg-rose/5 px-3.5 py-2.5 text-[0.75rem] leading-relaxed text-rose"
+              >
+                {error}
+              </p>
+            ) : null}
+
+            <Button type="submit" size="lg" className="w-full" disabled={!canSubmit || busy}>
+              {busy ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Saving…
+                </>
+              ) : (
+                <>
+                  Save new password
+                  <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </Button>
+          </form>
+
+          <p className="mt-5 text-center text-[0.65rem] leading-relaxed text-ink-muted">
+            Not your account?{" "}
+            <button
+              type="button"
+              onClick={() => void cancel()}
+              className="font-medium text-ink-soft underline decoration-line-strong underline-offset-2 transition-colors hover:text-ink"
+            >
+              Sign out instead
+            </button>
           </p>
         </div>
       </div>

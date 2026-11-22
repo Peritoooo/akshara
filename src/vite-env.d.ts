@@ -10,3 +10,13 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** Bridge exposed by electron/preload.cjs. Absent in the web build. */
+interface AksharaDesktopBridge {
+  onAuthLink(handler: (url: string) => void): () => void;
+  getAuthLink(): Promise<string | null>;
+}
+
+interface Window {
+  aksharaDesktop?: AksharaDesktopBridge;
+}

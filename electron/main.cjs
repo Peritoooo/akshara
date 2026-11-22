@@ -2,6 +2,7 @@ const {
   app,
   BrowserWindow,
   Menu,
+  ipcMain,
   net,
   protocol,
   shell,
@@ -13,6 +14,10 @@ const { Readable } = require("node:stream");
 const APP_SCHEME = "app";
 const APP_HOST = "akshara";
 const APP_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
+
+/** Password-reset / sign-in links delivered by the operating system. */
+const AUTH_SCHEME = "akshara";
+const AUTH_LINK_PREFIX = `${AUTH_SCHEME}://`;
 
 const ROOT = path.join(__dirname, "..");
 const DIST_DIR = path.join(ROOT, "dist");
@@ -153,6 +158,33 @@ function buildMenu() {
 }
 
 let mainWindow = null;
+let pendingAuthLink = null;
+
+function findAuthLink(argv) {
+  return (
+    argv.find(
+      (arg) => typeof arg === "string" && arg.startsWith(AUTH_LINK_PREFIX),
+    ) ?? null
+  );
+}
+
+function deliverAuthLink(url) {
+  if (!url) return;
+  // Keep it until the renderer asks for it, in case the window is not ready.
+  pendingAuthLink = url;
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+
+  const send = () => {
+    if (!mainWindow || mainWindow.isDestroyed()) return;
+    mainWindow.webContents.send("akshara:auth-link", url);
+  };
+
+  if (mainWindow.webContents.isLoading()) {
+    mainWindow.webContents.once("did-finish-load", send);
+  } else {
+    send();
+  }
+}
 
 function createWindow() {
   const saved = readWindowState();
@@ -175,6 +207,7 @@ function createWindow() {
       sandbox: true,
       spellcheck: false,
       webSecurity: true,
+      preload: path.join(__dirname, "preload.cjs"),
     },
   });
 
@@ -222,10 +255,17 @@ const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
 } else {
-  app.on("second-instance", () => {
+  app.on("second-instance", (_event, argv) => {
+    deliverAuthLink(findAuthLink(argv));
     if (!mainWindow) return;
     if (mainWindow.isMinimized()) mainWindow.restore();
     mainWindow.focus();
+  });
+
+  // macOS delivers custom-scheme links through this event instead of argv.
+  app.on("open-url", (event, url) => {
+    event.preventDefault();
+    deliverAuthLink(url);
   });
 
   app.setName("Akshara");
@@ -234,11 +274,21 @@ if (!gotLock) {
     // the Akshara icon instead of a generic Electron window.
     app.setDesktopName("akshara.desktop");
   }
+  if (process.platform !== "darwin") {
+    // Lets the mail client open password-reset links in this app.
+    app.setAsDefaultProtocolClient(AUTH_SCHEME);
+  }
 
   app.whenReady().then(() => {
     registerAppProtocol();
+    ipcMain.handle("akshara:get-auth-link", () => {
+      const url = pendingAuthLink;
+      pendingAuthLink = null;
+      return url;
+    });
     buildMenu();
     createWindow();
+    deliverAuthLink(findAuthLink(process.argv));
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
