@@ -1,6 +1,7 @@
 const {
   app,
   BrowserWindow,
+  dialog,
   Menu,
   ipcMain,
   net,
@@ -18,6 +19,7 @@ const APP_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
 
 /** Password-reset / sign-in links delivered by the operating system. */
 const AUTH_SCHEME = "akshara";
+const RELEASES_URL = "https://github.com/Peritoooo/akshara/releases";
 
 const ROOT = path.join(__dirname, "..");
 // Tests build a throwaway bundle (without Supabase) and point the shell at it.
@@ -156,6 +158,26 @@ function buildMenu() {
       ],
     },
     { role: "windowMenu" },
+    {
+      label: "Help",
+      submenu: [
+        {
+          label: "Check for Updates…",
+          click: async () => {
+            try {
+              await shell.openExternal(`${RELEASES_URL}/latest`);
+            } catch {
+              dialog.showErrorBox(
+                "Could not open the releases page",
+                `Open this address in your browser:\n${RELEASES_URL}/latest`,
+              );
+            }
+          },
+        },
+        { type: "separator" },
+        { label: `Akshara ${app.getVersion()}`, enabled: false },
+      ],
+    },
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }

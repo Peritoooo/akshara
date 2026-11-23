@@ -56,13 +56,16 @@ Builds pick up `.env.local`, so the desktop app can sign in to the same account.
 
 On Linux this produces:
 
-- `release/akshara_0.2.1_amd64.deb` — install with `sudo apt install ./release/akshara_0.2.1_amd64.deb`
-- `release/Akshara-0.2.1-x86_64.AppImage` — portable build (Ubuntu 24.04+ needs
+- `release/akshara_0.2.2_amd64.deb` — install with `sudo apt install ./release/akshara_0.2.2_amd64.deb`
+- `release/Akshara-0.2.2-x86_64.AppImage` — portable build (Ubuntu 24.04+ needs
   `libfuse2t64`; the `.deb` is the safer choice)
 
 Desktop reading data lives in `~/.config/akshara`, separate from any browser profile used
 during development. The installer registers the `akshara://` URL scheme so password-reset
 links open in the app.
+
+**Help → Check for Updates…** opens the latest release on GitHub in your browser. The
+repository is private, so that page requires your GitHub account.
 
 ## Accounts and sync (optional)
 

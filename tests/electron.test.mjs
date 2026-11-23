@@ -120,6 +120,20 @@ test("keeps the imported library after a restart", { skip }, async () => {
   await page.locator("article").first().waitFor({ timeout: 30_000 });
 });
 
+test("offers Check for Updates in the Help menu", { skip }, async () => {
+  const menu = await app.evaluate(({ Menu, app: electronApp }) => {
+    const applicationMenu = Menu.getApplicationMenu();
+    const help = applicationMenu?.items.find((item) => item.label === "Help");
+    return {
+      items: help?.submenu?.items.map((item) => item.label) ?? [],
+      version: electronApp.getVersion(),
+    };
+  });
+
+  assert.ok(menu.items.includes("Check for Updates…"));
+  assert.equal(menu.items.at(-1), `Akshara ${menu.version}`);
+});
+
 test("forwards akshara:// links to the renderer", { skip }, async () => {
   const link =
     "akshara://auth/recovery#access_token=test&refresh_token=test&type=recovery";
