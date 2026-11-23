@@ -14,7 +14,9 @@
     "test:smoke": "node --test tests/smoke.test.mjs",
     "app:start": "npm run build && electron .",
     "app:dir": "npm run build && electron-builder --linux --dir",
-    "app:dist": "npm run build && electron-builder --linux"
+    "app:dist": "npm run build && electron-builder --linux",
+    "test:e2e": "node --test tests/electron.test.mjs",
+    "test": "npm run test:smoke && npm run test:e2e"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "^5.3.0",

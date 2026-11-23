@@ -10,6 +10,7 @@ const {
 const fs = require("node:fs");
 const path = require("node:path");
 const { Readable } = require("node:stream");
+const { findAuthLink } = require("./authLink.cjs");
 
 const APP_SCHEME = "app";
 const APP_HOST = "akshara";
@@ -17,10 +18,12 @@ const APP_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
 
 /** Password-reset / sign-in links delivered by the operating system. */
 const AUTH_SCHEME = "akshara";
-const AUTH_LINK_PREFIX = `${AUTH_SCHEME}://`;
 
 const ROOT = path.join(__dirname, "..");
-const DIST_DIR = path.join(ROOT, "dist");
+// Tests build a throwaway bundle (without Supabase) and point the shell at it.
+const DIST_DIR = process.env.AKSHARA_DIST_DIR
+  ? path.resolve(process.env.AKSHARA_DIST_DIR)
+  : path.join(ROOT, "dist");
 const ICON_PATH = path.join(ROOT, "build", "icon.png");
 const STATE_PATH = () => path.join(app.getPath("userData"), "window-state.json");
 
@@ -159,14 +162,6 @@ function buildMenu() {
 
 let mainWindow = null;
 let pendingAuthLink = null;
-
-function findAuthLink(argv) {
-  return (
-    argv.find(
-      (arg) => typeof arg === "string" && arg.startsWith(AUTH_LINK_PREFIX),
-    ) ?? null
-  );
-}
 
 function deliverAuthLink(url) {
   if (!url) return;

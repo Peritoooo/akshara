@@ -160,6 +160,25 @@ library, sync state, and stored PDFs. It cannot be undone.
   **Attach the PDF** action that stores the file under the existing book id — your
   place, highlights, and bookmarks are kept.
 
+## Electron end-to-end tests
+
+`tests/electron.test.mjs` launches the real Electron shell with Playwright, builds a
+throwaway local-only bundle, and uses an isolated profile so it never touches your
+`~/.config/akshara` data. It covers:
+
+- the `app://akshara` origin and window title
+- the preload bridge (`onAuthLink`, `getAuthLink`)
+- the local-only library with no sign-in gate
+- PDF import, opening the reader, and persistence across a restart
+- `akshara://` link delivery from the main process to the renderer
+- startup/second-instance argument parsing
+
+```bash
+npm run test:e2e
+```
+
+It needs an X11 or Wayland session. Run the full suite with `npm test`.
+
 ## Smoke tests
 
 The Playwright suite covers the main routes, the import empty states, importing a PDF
