@@ -42,7 +42,7 @@ export const useSettingsStore = create<SettingsState>()(
         const state = persisted as Partial<SettingsState>;
         if (version < 2) {
           // Theme-follow is the new default reading mode: imported PDFs now
-          // match the website theme until the reader theme is changed again.
+          // match the app theme until the reader theme is changed again.
           if (state.reader) {
             state.reader = {
               ...state.reader,

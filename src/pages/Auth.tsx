@@ -10,11 +10,15 @@ import { TextInput } from "@/components/ui/Field";
 
 type Mode = "signin" | "signup" | "reset";
 
-/** Desktop builds receive reset links through the `akshara://` handler. */
-function resetRedirect() {
+/**
+ * The shipped product is a desktop app: email links return through the OS
+ * handler instead of an http origin. `npm run dev` falls back to its own origin
+ * so the flow can still be exercised in a browser during development.
+ */
+function linkRedirect(path: "recovery" | "callback") {
   if (typeof window === "undefined") return undefined;
   return window.aksharaDesktop
-    ? "akshara://auth/recovery"
+    ? `akshara://auth/${path}`
     : window.location.origin;
 }
 
@@ -74,7 +78,7 @@ export function AuthPage() {
     if (mode === "reset") {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         email.trim(),
-        { redirectTo: resetRedirect() },
+        { redirectTo: linkRedirect("recovery") },
       );
       if (resetError) {
         setError(friendlyError(resetError.message));
@@ -89,7 +93,7 @@ export function AuthPage() {
         password,
         options: {
           data: { display_name: name.trim() || undefined },
-          emailRedirectTo: window.location.origin,
+          emailRedirectTo: linkRedirect("callback"),
         },
       });
       if (signUpError) {

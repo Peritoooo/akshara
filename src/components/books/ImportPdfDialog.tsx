@@ -202,7 +202,7 @@ export function ImportPdfDialog({ open, onOpenChange }: ImportPdfDialogProps) {
       file: "",
       cover: palette,
       motif: motifs[seed % motifs.length],
-      publisher: "Personal PDF · kept in this browser",
+      publisher: "Personal PDF · kept on this device",
       addedAt: new Date().toISOString(),
       custom: true,
       coverImage: parsed.coverImage,
@@ -223,8 +223,8 @@ export function ImportPdfDialog({ open, onOpenChange }: ImportPdfDialogProps) {
     } catch (cause) {
       setError(
         cause instanceof Error && /quota|storage/i.test(cause.message)
-          ? "This browser is out of storage for PDFs. Remove an imported PDF, then try again."
-          : "The PDF could not be saved in this browser. Try a smaller file.",
+          ? "This device is out of storage for PDFs. Remove an imported PDF, then try again."
+          : "The PDF could not be saved on this device. Try a smaller file.",
       );
     } finally {
       setBusy(false);
@@ -236,7 +236,7 @@ export function ImportPdfDialog({ open, onOpenChange }: ImportPdfDialogProps) {
       open={open}
       onOpenChange={handleOpenChange}
       title="Add a PDF to your reading room"
-      description="Choose a PDF from your device. It stays in this browser — nothing is uploaded."
+      description="Choose a PDF from your device. It stays on this device — nothing is uploaded."
       className="max-w-xl"
       footer={
         <>
@@ -305,7 +305,7 @@ export function ImportPdfDialog({ open, onOpenChange }: ImportPdfDialogProps) {
             </span>
             <span className="mt-1.5 max-w-sm text-[0.75rem] leading-relaxed text-ink-muted">
               We make a soft cover from the first page and keep the whole file
-              offline in this browser.
+              offline on this device.
             </span>
             <input
               ref={inputRef}
@@ -392,7 +392,7 @@ export function ImportPdfDialog({ open, onOpenChange }: ImportPdfDialogProps) {
             </p>
           ) : (
             <p className="text-[0.7rem] leading-relaxed text-ink-muted">
-              Your PDF is stored offline in this browser. Clearing site data or
+              Your PDF is stored offline on this device. Clearing app data or
               resetting the library removes imported files.
             </p>
           )}

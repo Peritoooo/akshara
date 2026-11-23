@@ -103,7 +103,7 @@ export interface ReadingSession {
 }
 
 export type ReaderTheme = "light" | "sepia" | "dark";
-/** "follow" keeps the reading view in step with the website theme. */
+/** "follow" keeps the reading view in step with the app theme. */
 export type ReaderThemeChoice = "follow" | ReaderTheme;
 export type ReaderFont = "literata" | "newsreader" | "inter";
 export type AppTheme = "light" | "dark" | "system";

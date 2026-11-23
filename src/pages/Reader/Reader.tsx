@@ -79,7 +79,7 @@ export function ReaderPage() {
   const setReader = useSettingsStore((state) => state.setReader);
   const signedIn = useSessionStore((state) => state.phase === "authenticated");
 
-  // "follow" keeps the reading room in step with the website theme.
+  // "follow" keeps the reading room in step with the app theme.
   const readerTheme: ReaderTheme =
     preferences.theme === "follow" ? appTheme : preferences.theme;
 
@@ -319,7 +319,7 @@ export function ReaderPage() {
         await document.documentElement.requestFullscreen();
       }
     } catch {
-      toast.error("Full screen is not available in this browser");
+      toast.error("Full screen is not available in this app");
     }
   }, []);
 
@@ -941,7 +941,7 @@ export function ReaderPage() {
             <p className="mt-2 text-[0.625rem] text-ink-muted">
               {signedIn
                 ? "Highlights and notes sync to your account. PDF files stay on this device."
-                : "Highlights and notes live in this browser. Nothing is uploaded."}
+                : "Highlights and notes live on this device. Nothing is uploaded."}
             </p>
           </div>
         ) : null}

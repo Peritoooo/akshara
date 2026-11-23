@@ -66,7 +66,7 @@ export interface ReaderViewProps {
   file: string;
   title: string;
   author: string;
-  /** True when the PDF lives in this browser (IndexedDB) instead of /books. */
+  /** True when the PDF lives on this device (IndexedDB) instead of /books. */
   local?: boolean;
   pdfFit?: "page" | "width";
   initialTarget: ReaderTarget;

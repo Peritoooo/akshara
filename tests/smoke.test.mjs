@@ -138,7 +138,7 @@ test("home shows the import empty state", { timeout: 60_000 }, async () => {
   }
 });
 
-test("imported PDF follows the website theme and can be read, found, and deleted", { timeout: 150_000 }, async () => {
+test("imported PDF follows the app theme and can be read, found, and deleted", { timeout: 150_000 }, async () => {
   const { page, errors, close } = await openPage();
   try {
     const readerURL = await importSamplePdf(page);
@@ -180,12 +180,12 @@ test("imported PDF follows the website theme and can be read, found, and deleted
     );
     assert.equal(fileCount, 1, "the PDF bytes are stored in IndexedDB");
 
-    // Theme-follow: with the website in light mode the reader follows.
+    // Theme-follow: with the app in light mode the reader follows.
     const readerTheme = () =>
       page.getAttribute("[data-reader-theme]", "data-reader-theme");
     assert.equal(await readerTheme(), "light");
 
-    // Flip the website theme to charcoal and the reading room follows.
+    // Flip the app theme to charcoal and the reading room follows.
     await page.goto(`${baseURL}/settings`, { waitUntil: "domcontentloaded" });
     await page.getByRole("button", { name: "Charcoal" }).click();
     await page.waitForFunction(() => {

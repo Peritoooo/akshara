@@ -183,7 +183,7 @@ export function BookMenu({
         title={book.custom ? "Delete this PDF?" : "Remove this book?"}
         description={
           book.custom
-            ? `${book.title} and its local file will be removed from this browser.`
+            ? `${book.title} and its local file will be removed from this device.`
             : `${book.title} will leave your library, along with its bookmarks, highlights, and reading position.`
         }
         footer={
@@ -216,7 +216,7 @@ export function BookMenu({
       >
         <p className="text-sm leading-relaxed text-ink-muted">
           {book.custom
-            ? "This file is stored only in this browser. Deleting it cannot be undone, and you would need to add the PDF again."
+            ? "This file is stored only on this device. Deleting it cannot be undone, and you would need to add the PDF again."
             : "This title will leave your library. Your reading history for it will not be recovered."}
         </p>
       </Dialog>

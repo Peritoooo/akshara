@@ -6,10 +6,6 @@ dist/
 dist-ssr/
 release/
 
-# Hosting
-.vercel/
-.netlify/
-
 # Local environment
 .env
 .env.local

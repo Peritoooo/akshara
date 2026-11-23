@@ -8,7 +8,7 @@ let dbPromise: Promise<IDBDatabase> | null = null;
 function openDatabase(): Promise<IDBDatabase> {
   if (typeof indexedDB === "undefined") {
     return Promise.reject(
-      new Error("This browser cannot store imported PDFs locally."),
+      new Error("This app cannot store imported PDFs locally."),
     );
   }
   if (!dbPromise) {

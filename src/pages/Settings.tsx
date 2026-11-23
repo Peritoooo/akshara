@@ -51,7 +51,7 @@ const readerThemes: Array<{
   fg: string;
   accent: string;
 }> = [
-  { value: "follow", label: "Match website", bg: "#EFE9DE", fg: "#2A2621", accent: "#8A6D43" },
+  { value: "follow", label: "Match app", bg: "#EFE9DE", fg: "#2A2621", accent: "#8A6D43" },
   { value: "light", label: "Paper", bg: "#F7F5F0", fg: "#2A2621", accent: "#8A6D43" },
   { value: "sepia", label: "Sepia", bg: "#F2E7D3", fg: "#3A2F22", accent: "#8A6535" },
   { value: "dark", label: "Night", bg: "#17191B", fg: "#E9E5DD", accent: "#C6A978" },
@@ -832,8 +832,8 @@ export function SettingsPage() {
           title="Yours to keep"
           description={
             signedIn
-              ? "Reading metadata lives on your account and in this browser; PDF files stay on the device that imported them."
-              : "Akshara is local-first. Your reading positions, notes, and preferences are kept in this browser."
+              ? "Reading metadata lives on your account and on this device; PDF files stay on the device that imported them."
+              : "Akshara is local-first. Your reading positions, notes, and preferences are kept on this device."
           }
           last
         >
@@ -861,8 +861,8 @@ export function SettingsPage() {
             <div className="mt-4 border-t border-line pt-4">
               <p className="text-[0.65rem] leading-relaxed text-ink-muted">
                 {signedIn
-                  ? "Clearing this browser's data removes the local copy of your metadata and your imported PDFs. Your account copy is pulled back the next time you sign in, but PDFs must be imported again on this device."
-                  : "Your library holds only the books you import. Everything stays on this device — there is no account, server, or cloud sync. Export a copy before clearing this browser's data."}
+                  ? "Clearing the app's data removes the local copy of your metadata and your imported PDFs. Your account copy is pulled back the next time you sign in, but PDFs must be imported again on this device."
+                  : "Your library holds only the books you import. Everything stays on this device — there is no account, server, or cloud sync. Export a copy before clearing the app's data."}
               </p>
             </div>
           </div>
