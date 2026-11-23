@@ -5,6 +5,7 @@ node_modules/
 dist/
 dist-ssr/
 release/
+electron/main.bundle.cjs
 
 # Local environment
 .env

@@ -45,6 +45,9 @@ exit "$STATUS"
 `;
 
 module.exports = async function afterPack(context) {
+  // The launcher and the setuid helper only exist in the Linux package.
+  if (context.electronPlatformName !== "linux") return;
+
   const appDir = context.appOutDir;
   const executable = path.join(appDir, "akshara");
   const helper = path.join(appDir, "chrome-sandbox");

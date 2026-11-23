@@ -2,75 +2,108 @@
 
 **Every letter opens a new world.**
 
-A local-first **desktop** PDF reader with a warm, editorial interface. Your reading room
-starts empty — bring in your own PDFs and read them in a comfortable, distraction-free
-window that follows the app theme.
+[![CI](https://github.com/Peritoooo/akshara/actions/workflows/ci.yml/badge.svg)](https://github.com/Peritoooo/akshara/actions/workflows/ci.yml)
+[![Latest release](https://img.shields.io/github/v/release/Peritoooo/akshara?label=release)](https://github.com/Peritoooo/akshara/releases/latest)
+[![License](https://img.shields.io/github/license/Peritoooo/akshara)](LICENSE)
 
-Akshara is distributed only as a desktop application. There is no web deployment, no
-browser build to host, and no server that stores books. Optional accounts keep reading
-metadata (progress, highlights, notes, bookmarks, collections, sessions, profile) in sync
-between the computers you use. **PDF files never leave the device that imported them.**
+![Akshara](docs/brand/akshara-hero.png)
 
-Akshara runs in two modes from the same build:
+A local-first **desktop** PDF reader with a warm, editorial interface. Bring your own
+books, read them in a quiet window that follows the app theme, and keep your place.
+Optional accounts sync reading metadata between your computers — **PDF files never leave
+the device that imported them.**
 
-- **Local mode** — no configuration. Everything lives on the device.
-- **Account mode** — set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` and sign in to
-  sync metadata across devices for that account.
+## Download
+
+Grab the latest installer from [**Releases**](https://github.com/Peritoooo/akshara/releases/latest).
+
+| Platform | File | Notes |
+| --- | --- | --- |
+| Linux (Debian/Ubuntu) | `akshara_*_amd64.deb` | `sudo apt install ./akshara_*_amd64.deb` |
+| Linux (portable) | `Akshara-*-x86_64.AppImage` | Needs `libfuse2t64` on Ubuntu 24.04+ |
+| Windows | `Akshara-*-setup.exe` | Unsigned; SmartScreen may warn |
+| macOS | `Akshara-*-*.dmg` | Intel and Apple Silicon; unsigned, right-click → Open |
+
+Builds are unsigned until signing certificates are configured. The Linux `.deb` and the
+AppImage receive the same version.
+
+## Screenshots
+
+| Home | Library | Reader |
+| --- | --- | --- |
+| ![Home](docs/screenshots/home.png) | ![Library](docs/screenshots/library.png) | ![Reader](docs/screenshots/reader.png) |
+
+## Why Akshara
+
+- **Your books stay yours.** PDFs live in local storage; the account only carries
+  metadata. No upload, no file server, no lock-in.
+- **Built to be read.** The page blends into the theme, text is selectable, highlights
+  are anchored to character offsets, and the toolbar disappears when you are reading.
+- **Works offline.** The library, reader, notes, and progress work without a connection.
+  Changes queue and sync when the network returns.
+- **One account, several computers.** Progress, highlights, bookmarks, collections,
+  sessions, and preferences follow you; the files do not.
+- **Calm defaults.** Paper, sepia, and night reading themes; a focus mode; and a reader
+  that follows the app theme unless you choose otherwise.
 
 ## Features
 
 - Home, Library, Favorites, Reading Statistics, and Settings
-- Import your own PDFs — no curated catalog, only books you add; a soft cover is made from
-  the first page and stored offline on the device
-- Personal collections, reading statuses, favorites, and a daily reading goal
-- Reading themes (match app, paper, sepia, night), typography controls, focus mode, and
-  keyboard shortcuts
-- PDF reader with page/width fitting, page navigation, zoom, bookmarks, and tonal themes
-  that follow the app theme by default
-- Text selection with persistent highlights and notes, anchored to PDF character offsets
+- Import your own PDFs — no catalog, only the books you add; a soft cover is made from
+  the first page
+- Collections, reading statuses, favorites, and a daily reading goal
+- Themed PDF reader with page/width fitting, zoom, bookmarks, and keyboard shortcuts
+- Text selection with persistent highlights and notes
 - Light, dark, and system application themes
-- Optional accounts with email + password, row-level-security isolation, and offline-first
-  sync that queues changes and replays them when the connection returns
-- Password reset by email, in-app password change, and permanent account deletion
+- Optional email/password accounts with row-level security and offline-first sync
+- Password reset through `akshara://` deep links, in-app password change, and permanent
+  account deletion
+- Automatic updates on Windows, macOS, and the Linux AppImage
 
-## Desktop application
+## Privacy model
 
-Akshara ships as a native desktop app (Electron) and runs the reader fully offline in its
-own window, with a stable `app://akshara` origin for local storage.
+| Synced to your account | Stays on the device |
+| --- | --- |
+| Book metadata (title, author, cover thumbnail) | **The PDF file itself** |
+| Library entries, status, progress | Device appearance theme |
+| Reading positions | |
+| Highlights, notes, bookmarks | |
+| Collections and memberships | |
+| Reading sessions | |
+| Display name, daily goal, reader preferences | |
 
-Requirements: Node 20+ and Linux (the current installers target Linux x64).
+The Supabase `anon` key ships in the client by design; row-level security is what
+protects each account. No `service_role` key is ever bundled.
+
+## Getting started
+
+Requirements: Node 20+ for development.
 
 ```bash
 npm install
 npm run app:start   # build + launch the desktop app
 ```
 
-`npm run dev` starts the Vite UI in a browser for fast interface work. That server is a
-development tool only — the product is the Electron app.
+`npm run dev` runs the Vite UI in a browser for fast interface work. The shipped product
+is the Electron app.
 
-```bash
-npm run app:dist    # build installers into release/
-```
+### Scripts
 
-Builds pick up `.env.local`, so the desktop app can sign in to the same account.
-
-On Linux this produces:
-
-- `release/akshara_0.2.2_amd64.deb` — install with `sudo apt install ./release/akshara_0.2.2_amd64.deb`
-- `release/Akshara-0.2.2-x86_64.AppImage` — portable build (Ubuntu 24.04+ needs
-  `libfuse2t64`; the `.deb` is the safer choice)
-
-Desktop reading data lives in `~/.config/akshara`, separate from any browser profile used
-during development. The installer registers the `akshara://` URL scheme so password-reset
-links open in the app.
-
-**Help → Check for Updates…** opens the latest release on GitHub in your browser. The
-repository is private, so that page requires your GitHub account.
+| Command | What it does |
+| --- | --- |
+| `npm run app:start` | Build and launch the desktop app |
+| `npm run app:dist` | Build Linux `.deb` + AppImage into `release/` |
+| `npm run app:dist:win` | Build the Windows installer |
+| `npm run app:dist:mac` | Build the macOS dmg/zip |
+| `npm run test:smoke` | Browser UI suite |
+| `npm run test:e2e` | Real Electron shell suite |
+| `npm test` | Both suites |
+| `npx tsc -b` | Typecheck |
 
 ## Accounts and sync (optional)
 
-Sync is off unless a Supabase project is configured, so a plain `npm install && npm run
-app:start` works with zero backend.
+Sync is off unless a Supabase project is configured, so a plain install works with zero
+backend.
 
 1. Create a project at [supabase.com](https://supabase.com).
 2. Apply the schema. Either connect the project to this repository
@@ -84,144 +117,118 @@ app:start` works with zero backend.
    VITE_SUPABASE_ANON_KEY=eyJhbGciOi...
    ```
 
-4. For quick local testing, turn off **Authentication → Providers → Email → Confirm
-   email** so a new account can sign in immediately.
+4. Under **Authentication → URL Configuration**, set the Site URL to any valid
+   `https://` address (for example `https://example.com`) and add these redirect URLs:
 
-The `anon` key is public by design — it ships in the client bundle and row-level
-security protects each account's rows. **Never** put the `service_role` key in the app.
+   - `akshara://auth/recovery` — password reset
+   - `akshara://auth/callback` — email confirmation
+   - `http://localhost:5173` — only for `npm run dev`
 
-### Redirect URLs
-
-Supabase only sends links to addresses on its allowlist. Because Akshara is desktop-only,
-the reset link must come back through the operating system:
-
-- **Site URL:** `http://localhost:5173` (a placeholder; the desktop app never loads it)
-- **Redirect URLs:**
-  - `akshara://auth/recovery` — required for password reset
-  - `akshara://auth/callback` — required for email confirmation links
-  - `http://localhost:5173` — only needed if you sign in through `npm run dev`
-
-### Email delivery
-
-Password reset and sign-up emails use Supabase's built-in mailer, which is heavily
-rate-limited (a few messages per hour). Connect a transactional provider under
-**Authentication → Emails → SMTP Settings** and verify the sender domain before inviting
-real readers.
-
-Common providers (use the provider's SMTP credentials, not an API key unless noted):
-
-| Provider | Host | Port | Username | Password |
-| --- | --- | --- | --- | --- |
-| Resend | `smtp.resend.com` | 465 (SSL) / 587 | `resend` | API key |
-| SendGrid | `smtp.sendgrid.net` | 587 | `apikey` | API key |
-| Mailgun | `smtp.mailgun.org` | 587 | `postmaster@your-domain` | SMTP password |
-| Amazon SES | `email-smtp.<region>.amazonaws.com` | 587 | SES SMTP username | SES SMTP password |
-| Gmail (low volume) | `smtp.gmail.com` | 587 | your address | App password (2FA required) |
-
-Set **Sender email** to an address on a domain the provider has verified (for example
-`akshara@your-domain.com`) and give it a display name such as “Akshara”. Save, then use
-the dashboard's test-email action before relying on it.
-
-Until SMTP is connected, add accounts manually from **Authentication → Users** with
-**Auto Confirm User** enabled.
-
-### Password reset
-
-“Forgot password?” emails a link that opens through the `akshara://` handler. The app
-registers the scheme at install time, exchanges the link's tokens, and shows the “Choose
-a new password” screen. A fresh install may need one sign-out/sign-in before the operating
-system picks up the handler.
-
-### Deleting an account
-
-**Settings → Delete account** calls the `delete_account()` database function, which
-removes the caller's rows and their login in one transaction, then wipes this device's
-library, sync state, and stored PDFs. It cannot be undone.
-
-### What syncs
-
-| Synced to the account | Stays on the device |
-| --- | --- |
-| Book metadata (title, author, cover thumbnail) | The PDF file itself |
-| Library entries, status, progress | Device appearance theme |
-| Reading positions | |
-| Highlights, notes, bookmarks | |
-| Collections and memberships | |
-| Reading sessions | |
-| Display name, daily goal, reader preferences | |
+5. Email delivery: connect a transactional provider under
+   **Authentication → Emails → SMTP Settings** (Resend, SendGrid, Mailgun, SES, or Gmail
+   with an app password), then verify the sender domain. Until then, add accounts
+   manually from **Authentication → Users** with **Auto Confirm User** enabled.
 
 ### How sync behaves
 
 - The local store is the source of truth for the UI; writes go out about a second later.
-- Offline changes queue in local storage and are pushed on reconnect, focus, or every
-  30 seconds while online.
+- Offline changes queue locally and replay on reconnect, focus, or every 30 seconds.
 - Conflicts are last-write-wins per record, and a record with an unsent local change
   always wins.
-- Deletions travel as `deleted_at` tombstones so they do not reappear from another
-  device.
-- A book that arrived from the account but has no PDF on this device opens to an
-  **Attach the PDF** action that stores the file under the existing book id — your
-  place, highlights, and bookmarks are kept.
+- Deletions travel as `deleted_at` tombstones so they do not reappear elsewhere.
+- A book that arrived from the account without its PDF opens an **Attach the PDF**
+  action; your place, highlights, and bookmarks are kept.
 
-## Electron end-to-end tests
+### Deleting an account
 
-`tests/electron.test.mjs` launches the real Electron shell with Playwright, builds a
-throwaway local-only bundle, and uses an isolated profile so it never touches your
-`~/.config/akshara` data. It covers:
+**Settings → Delete account** calls the `delete_account()` database function, which
+removes the caller's rows and login in one transaction, then wipes this device's library,
+sync state, and stored PDFs. It cannot be undone.
 
-- the `app://akshara` origin and window title
-- the preload bridge (`onAuthLink`, `getAuthLink`)
-- the local-only library with no sign-in gate
-- PDF import, opening the reader, and persistence across a restart
-- `akshara://` link delivery from the main process to the renderer
-- startup/second-instance argument parsing
+## Updates
 
-```bash
-npm run test:e2e
+- **Windows and Linux AppImage:** Akshara checks quietly after launch and downloads
+  updates in the background. **Help → Check for Updates…** checks immediately and prompts
+  to restart when a build is ready.
+- **macOS:** the same flow, but installing an update requires a signed build. The
+  current artifacts are unsigned, so macOS will report that it cannot update and point
+  you at the release page; add signing/notarization credentials to enable it.
+- **Linux `.deb`:** updates come from the package manager. **Help → Check for Updates…**
+  opens the release page.
+- Set `publish` in `electron-builder.yml` and push a `v*` tag; the release workflow
+  builds all platforms and uploads installers plus `latest*.yml` metadata.
+
+## Architecture
+
+```text
+src/                 React renderer (Vite, TypeScript, Tailwind, zustand)
+  pages/Reader/      pdf.js reader, text layer, highlights
+  lib/               Supabase client, sync engine, IndexedDB PDF store
+  store/             Local library, settings, and session state
+electron/
+  main.cjs           Window, app:// protocol, deep links, menus, auto-update
+  preload.cjs        Small context-isolated bridge
+  authLink.cjs       akshara:// argument parsing
+  updater.cjs        Which builds can self-update
+supabase/migrations/ Schema, RLS policies, and the delete_account() RPC
+tests/               Smoke suite (browser) and Electron E2E suite
 ```
 
-It needs an X11 or Wayland session. Run the full suite with `npm test`.
+The renderer is bundled by Vite. The Electron main process is bundled with esbuild into
+`electron/main.bundle.cjs` so runtime dependencies (including `electron-updater`) are
+included without shipping `node_modules`.
 
-## Smoke tests
-
-The Playwright suite covers the main routes, the import empty states, importing a PDF
-that follows the app theme, favoriting/searching/deleting an imported PDF, the reader
-panel focus trap, and the narrow-window layout. It starts its own Vite server and drives
-headless Chromium, so neither the desktop app nor a dev server needs to be running. This
-is a test harness, not a deployment target.
+## Building installers
 
 ```bash
-npm run test:smoke
+npm run app:dist       # Linux
+npm run app:dist:win   # Windows
+npm run app:dist:mac   # macOS
 ```
 
-The suite uses an installed Chrome or Chromium binary. It checks `CHROME_PATH` first, then
-common Linux locations. Set it explicitly if needed:
+The tag workflow (`.github/workflows/release.yml`) builds Linux, Windows, and macOS on
+their native runners and publishes the release. Signing is disabled by default; add
+`CSC_LINK`, `CSC_KEY_PASSWORD`, and (for macOS) notarization credentials as repository
+secrets to sign builds.
+
+## Tests
 
 ```bash
-CHROME_PATH=/path/to/chrome npm run test:smoke
+npm test
 ```
+
+- `tests/smoke.test.mjs` starts its own Vite server and drives headless Chrome through the
+  main routes, import flow, reader, and narrow-window layout.
+- `tests/electron.test.mjs` builds a throwaway local-only bundle, launches the real
+  Electron shell with an isolated profile, and verifies the `app://akshara` origin, the
+  preload bridge, local startup, PDF import, restart persistence, `akshara://` delivery,
+  and the Help menu.
+
+The Electron suite needs X11 or Wayland; use `xvfb-run --auto-servernum npm test` on a
+headless machine.
 
 ## Reading data
 
-Local state is persisted under these storage keys:
-
-- `akshara-library-v1` — library entries, reading positions, collections, bookmarks,
-  highlights, imported book metadata, and sessions
+- `akshara-library-v1` — entries, positions, collections, bookmarks, highlights, imported
+  metadata, and sessions
 - `akshara-settings-v1` — application and reader preferences
-- `akshara-sync-v1` — per-account sync bookkeeping (last server timestamps and the
-  queue of unsent changes)
+- `akshara-sync-v1` — per-account sync bookkeeping and the queue of unsent changes
+- IndexedDB `akshara-files` — the PDF files themselves
 
-Imported PDF files themselves live in IndexedDB (`akshara-files`) because local storage is
-too small for books. They never leave the device. Removing an imported PDF from its book
-menu deletes both its metadata and its stored file.
-
-Use **Settings → Export copy** to save a JSON backup of library metadata (PDF files are
-not included), or **Reset library** to clear your reading state and start fresh.
+Use **Settings → Export copy** for a JSON backup of metadata (not PDFs), or **Reset
+library** to start fresh. On Linux the profile lives in `~/.config/akshara`.
 
 ## Database schema
 
-`supabase/migrations/` holds the full schema: `profiles`, `books`, `library_entries`,
-`reading_positions`, `highlights`, `bookmarks`, `collections`, `collection_books`, and
-`reading_sessions`. Every table carries a `user_id`, row-level security limits each row
-to its owner, deletions are tombstones (`deleted_at`), and `updated_at` is maintained by
-triggers.
+`supabase/migrations/` holds `profiles`, `books`, `library_entries`, `reading_positions`,
+`highlights`, `bookmarks`, `collections`, `collection_books`, and `reading_sessions`.
+Every table carries a `user_id`, RLS limits each row to its owner, deletions are
+tombstones, and `updated_at` is maintained by triggers.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Security issues: see [SECURITY.md](SECURITY.md).
+
+## License
+
+[MIT](LICENSE) © 2026 Peritooo

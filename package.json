@@ -1,21 +1,24 @@
 {
   "name": "akshara",
   "private": true,
-  "version": "0.2.2",
+  "version": "0.3.0",
   "type": "module",
-  "description": "Akshara — a modern digital reading platform. Every letter opens a new world.",
-  "author": "Peritooo <prabeshkharel61@gmail.com>",
-  "main": "electron/main.cjs",
+  "description": "A local-first desktop PDF reader with optional metadata sync.",
+  "author": "Peritooo <peritooo@users.noreply.github.com>",
+  "main": "electron/main.bundle.cjs",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && npm run build:main",
+    "build:main": "esbuild electron/main.cjs --bundle --platform=node --target=node22 --external:electron --format=cjs --outfile=electron/main.bundle.cjs",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "test:smoke": "node --test tests/smoke.test.mjs",
     "app:start": "npm run build && electron .",
     "app:dir": "npm run build && electron-builder --linux --dir",
-    "app:dist": "npm run build && electron-builder --linux",
-    "test:e2e": "node --test tests/electron.test.mjs",
+    "app:dist": "npm run build && electron-builder --linux --publish never",
+    "app:dist:win": "npm run build && electron-builder --win --publish never",
+    "app:dist:mac": "npm run build && electron-builder --mac --publish never",
+    "test:e2e": "npm run build:main && node --test tests/electron.test.mjs",
     "test": "npm run test:smoke && npm run test:e2e"
   },
   "dependencies": {
@@ -31,6 +34,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@supabase/supabase-js": "^2.119.2",
     "clsx": "^2.1.1",
+    "electron-updater": "^6.8.11",
     "epubjs": "^0.3.93",
     "lucide-react": "^0.468.0",
     "pdfjs-dist": "4.10.38",
@@ -49,9 +53,31 @@
     "@vitejs/plugin-react": "^6.3.0",
     "electron": "^33.4.11",
     "electron-builder": "^25.1.8",
+    "esbuild": "^0.28.2",
     "playwright-core": "^1.65.1",
     "tailwindcss": "^4.3.5",
     "typescript": "~5.9.3",
     "vite": "^8.3.8"
-  }
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Peritoooo/akshara.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Peritoooo/akshara/issues"
+  },
+  "homepage": "https://github.com/Peritoooo/akshara#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "pdf",
+    "reader",
+    "electron",
+    "react",
+    "supabase",
+    "local-first",
+    "highlights"
+  ]
 }

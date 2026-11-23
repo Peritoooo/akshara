@@ -22,13 +22,21 @@ asar: true
 compression: normal
 afterPack: scripts/after-pack.cjs
 
+# electron-updater reads this to find new releases. The repository is public, so
+# no token ships with the app.
+publish:
+  provider: github
+  owner: Peritoooo
+  repo: akshara
+  releaseType: release
+
 linux:
   target:
     - deb
     - AppImage
   category: Office
   icon: build/icon.png
-  maintainer: Peritooo <prabeshkharel61@gmail.com>
+  maintainer: Peritooo <peritooo@users.noreply.github.com>
   vendor: Akshara
   synopsis: A calm, local-first PDF reader
   description: >-
@@ -60,4 +68,24 @@ deb:
 appImage:
   artifactName: ${productName}-${version}-${arch}.${ext}
 
-publish: null
+win:
+  target:
+    - nsis
+  icon: build/icon.png
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  artifactName: ${productName}-${version}-setup.${ext}
+
+mac:
+  target:
+    - dmg
+    - zip
+  category: public.app-category.productivity
+  icon: build/icon.png
+  artifactName: ${productName}-${version}-${arch}.${ext}
+  # Add signing/notarization credentials in CI to turn this on.
+  notarize: false

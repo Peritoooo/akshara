@@ -10,6 +10,7 @@ import { build } from "vite";
 
 const require = createRequire(import.meta.url);
 const { findAuthLink } = require("../electron/authLink.cjs");
+const { canAutoUpdate } = require("../electron/updater.cjs");
 
 const projectRoot = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
 const fixturePdf = path.join(projectRoot, "tests", "fixtures", "sample.pdf");
@@ -76,6 +77,21 @@ test("finds akshara links in startup and second-instance argv", () => {
   assert.equal(findAuthLink(["/opt/Akshara/akshara", "https://example.com"]), null);
   assert.equal(findAuthLink([]), null);
   assert.equal(findAuthLink(null), null);
+});
+
+test("only auto-updates builds it can replace", () => {
+  assert.equal(canAutoUpdate({ isPackaged: false, platform: "win32" }), false);
+  assert.equal(canAutoUpdate({ isPackaged: true, platform: "win32" }), true);
+  assert.equal(canAutoUpdate({ isPackaged: true, platform: "darwin" }), true);
+  assert.equal(canAutoUpdate({ isPackaged: true, platform: "linux" }), false);
+  assert.equal(
+    canAutoUpdate({
+      isPackaged: true,
+      platform: "linux",
+      appImageEnv: "/tmp/Akshara.AppImage",
+    }),
+    true,
+  );
 });
 
 test("opens the shell at app://akshara with the desktop bridge", { skip }, async () => {

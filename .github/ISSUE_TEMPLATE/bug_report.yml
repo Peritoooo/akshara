@@ -1,0 +1,66 @@
+name: Bug report
+description: Something in the desktop app is broken or behaves unexpectedly
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please **do not** attach book files, `.env.local`,
+        passwords, or access tokens. Screenshots are welcome.
+
+  - type: input
+    id: version
+    attributes:
+      label: Akshara version
+      description: Shown at the bottom of Settings or in Help → About.
+      placeholder: 0.3.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Linux (.deb)
+        - Linux (AppImage)
+        - Windows
+        - macOS
+        - Built from source
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Library
+        2. Import a PDF
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, screenshots, or a console error
+      description: Redact anything private before pasting.
+      render: shell
+    validations:
+      required: false

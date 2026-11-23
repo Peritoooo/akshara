@@ -11,7 +11,9 @@ const {
 const fs = require("node:fs");
 const path = require("node:path");
 const { Readable } = require("node:stream");
+const { autoUpdater } = require("electron-updater");
 const { findAuthLink } = require("./authLink.cjs");
+const { canAutoUpdate } = require("./updater.cjs");
 
 const APP_SCHEME = "app";
 const APP_HOST = "akshara";
@@ -20,6 +22,12 @@ const APP_ORIGIN = `${APP_SCHEME}://${APP_HOST}`;
 /** Password-reset / sign-in links delivered by the operating system. */
 const AUTH_SCHEME = "akshara";
 const RELEASES_URL = "https://github.com/Peritoooo/akshara/releases";
+
+const CAN_AUTO_UPDATE = canAutoUpdate({
+  isPackaged: app.isPackaged,
+  platform: process.platform,
+  appImageEnv: process.env.APPIMAGE,
+});
 
 const ROOT = path.join(__dirname, "..");
 // Tests build a throwaway bundle (without Supabase) and point the shell at it.
@@ -163,16 +171,7 @@ function buildMenu() {
       submenu: [
         {
           label: "Check for Updates…",
-          click: async () => {
-            try {
-              await shell.openExternal(`${RELEASES_URL}/latest`);
-            } catch {
-              dialog.showErrorBox(
-                "Could not open the releases page",
-                `Open this address in your browser:\n${RELEASES_URL}/latest`,
-              );
-            }
-          },
+          click: () => void checkForUpdates(),
         },
         { type: "separator" },
         { label: `Akshara ${app.getVersion()}`, enabled: false },
@@ -184,6 +183,87 @@ function buildMenu() {
 
 let mainWindow = null;
 let pendingAuthLink = null;
+let manualUpdateCheck = false;
+
+function setupAutoUpdater() {
+  if (!app.isPackaged) return;
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on("update-available", (info) => {
+    if (!manualUpdateCheck) return;
+    manualUpdateCheck = false;
+    void dialog.showMessageBox({
+      type: "info",
+      title: "Update available",
+      message: `Akshara ${info.version} is available.`,
+      detail: "It is downloading in the background. You can keep reading.",
+      buttons: ["OK"],
+    });
+  });
+
+  autoUpdater.on("update-not-available", () => {
+    if (!manualUpdateCheck) return;
+    manualUpdateCheck = false;
+    void dialog.showMessageBox({
+      type: "info",
+      title: "You're up to date",
+      message: `Akshara ${app.getVersion()} is the latest version.`,
+      buttons: ["OK"],
+    });
+  });
+
+  autoUpdater.on("update-downloaded", (info) => {
+    void dialog
+      .showMessageBox({
+        type: "info",
+        title: "Update ready",
+        message: `Akshara ${info.version} is ready to install.`,
+        detail: "Restart to finish updating. Your library stays on this device.",
+        buttons: ["Restart now", "Later"],
+        defaultId: 0,
+        cancelId: 1,
+      })
+      .then(({ response }) => {
+        if (response === 0) autoUpdater.quitAndInstall();
+      });
+  });
+
+  autoUpdater.on("error", (error) => {
+    if (!manualUpdateCheck) return;
+    manualUpdateCheck = false;
+    dialog.showErrorBox(
+      "Could not check for updates",
+      `${error.message}\n\nDownload the latest release from:\n${RELEASES_URL}/latest`,
+    );
+  });
+
+  // Check quietly after launch so updates arrive without a click.
+  setTimeout(() => void checkForUpdates({ silent: true }), 10_000);
+}
+
+async function checkForUpdates({ silent = false } = {}) {
+  // `.deb` installs and development builds cannot replace themselves: send the
+  // reader to the release page instead.
+  if (!CAN_AUTO_UPDATE) {
+    if (!silent) await shell.openExternal(`${RELEASES_URL}/latest`);
+    return;
+  }
+
+  if (!silent) manualUpdateCheck = true;
+  try {
+    await autoUpdater.checkForUpdates();
+  } catch (error) {
+    if (!silent) {
+      manualUpdateCheck = false;
+      dialog.showErrorBox(
+        "Could not check for updates",
+        `${error instanceof Error ? error.message : String(error)}\n\nDownload the latest release from:\n${RELEASES_URL}/latest`,
+      );
+    }
+  }
+}
 
 function deliverAuthLink(url) {
   if (!url) return;
@@ -306,6 +386,7 @@ if (!gotLock) {
     buildMenu();
     createWindow();
     deliverAuthLink(findAuthLink(process.argv));
+    setupAutoUpdater();
 
     app.on("activate", () => {
       if (BrowserWindow.getAllWindows().length === 0) createWindow();
