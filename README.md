@@ -101,9 +101,25 @@ the reset link must come back through the operating system:
 ### Email delivery
 
 Password reset and sign-up emails use Supabase's built-in mailer, which is heavily
-rate-limited (a few messages per hour). Before inviting real readers, connect a
-transactional provider under **Authentication → Emails → SMTP Settings** and verify the
-sender domain. Until then, add accounts manually from **Authentication → Users** with
+rate-limited (a few messages per hour). Connect a transactional provider under
+**Authentication → Emails → SMTP Settings** and verify the sender domain before inviting
+real readers.
+
+Common providers (use the provider's SMTP credentials, not an API key unless noted):
+
+| Provider | Host | Port | Username | Password |
+| --- | --- | --- | --- | --- |
+| Resend | `smtp.resend.com` | 465 (SSL) / 587 | `resend` | API key |
+| SendGrid | `smtp.sendgrid.net` | 587 | `apikey` | API key |
+| Mailgun | `smtp.mailgun.org` | 587 | `postmaster@your-domain` | SMTP password |
+| Amazon SES | `email-smtp.<region>.amazonaws.com` | 587 | SES SMTP username | SES SMTP password |
+| Gmail (low volume) | `smtp.gmail.com` | 587 | your address | App password (2FA required) |
+
+Set **Sender email** to an address on a domain the provider has verified (for example
+`akshara@your-domain.com`) and give it a display name such as “Akshara”. Save, then use
+the dashboard's test-email action before relying on it.
+
+Until SMTP is connected, add accounts manually from **Authentication → Users** with
 **Auto Confirm User** enabled.
 
 ### Password reset
