@@ -12,9 +12,24 @@ interface ImportMeta {
 }
 
 /** Bridge exposed by electron/preload.cjs. Absent in the web build. */
+interface AksharaAppInfo {
+  version: string;
+  platform: string;
+  canAutoUpdate: boolean;
+  packaged: boolean;
+}
+
+interface AksharaUpdateResult {
+  status: "current" | "available" | "external" | "error";
+  version?: string;
+  message?: string;
+}
+
 interface AksharaDesktopBridge {
   onAuthLink(handler: (url: string) => void): () => void;
   getAuthLink(): Promise<string | null>;
+  getAppInfo(): Promise<AksharaAppInfo>;
+  checkForUpdates(): Promise<AksharaUpdateResult>;
 }
 
 interface Window {

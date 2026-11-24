@@ -14,4 +14,12 @@ contextBridge.exposeInMainWorld("aksharaDesktop", {
   getAuthLink() {
     return ipcRenderer.invoke("akshara:get-auth-link");
   },
+  /** Version, platform, and whether this build can replace itself. */
+  getAppInfo() {
+    return ipcRenderer.invoke("akshara:get-app-info");
+  },
+  /** Check now and report the result to the Settings page. */
+  checkForUpdates() {
+    return ipcRenderer.invoke("akshara:check-for-updates");
+  },
 });

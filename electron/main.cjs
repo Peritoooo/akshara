@@ -265,6 +265,38 @@ async function checkForUpdates({ silent = false } = {}) {
   }
 }
 
+/**
+ * The Settings page asks for a check and renders the answer in place. Native
+ * dialogs stay reserved for menu checks and for the "update ready" prompt.
+ */
+async function checkForUpdatesFromSettings() {
+  if (!CAN_AUTO_UPDATE) {
+    try {
+      await shell.openExternal(`${RELEASES_URL}/latest`);
+      return { status: "external" };
+    } catch (error) {
+      return {
+        status: "error",
+        message: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    const latest = result?.updateInfo?.version;
+    if (latest && latest !== app.getVersion()) {
+      return { status: "available", version: latest };
+    }
+    return { status: "current", version: app.getVersion() };
+  } catch (error) {
+    return {
+      status: "error",
+      message: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 function deliverAuthLink(url) {
   if (!url) return;
   // Keep it until the renderer asks for it, in case the window is not ready.
@@ -383,6 +415,13 @@ if (!gotLock) {
       pendingAuthLink = null;
       return url;
     });
+    ipcMain.handle("akshara:get-app-info", () => ({
+      version: app.getVersion(),
+      platform: process.platform,
+      canAutoUpdate: CAN_AUTO_UPDATE,
+      packaged: app.isPackaged,
+    }));
+    ipcMain.handle("akshara:check-for-updates", () => checkForUpdatesFromSettings());
     buildMenu();
     createWindow();
     deliverAuthLink(findAuthLink(process.argv));

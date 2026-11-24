@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Check,
   Cloud,
@@ -138,6 +138,24 @@ export function SettingsPage() {
   const syncError = useSyncStatus((state) => state.error);
   const signedIn = session.phase === "authenticated";
   const [syncing, setSyncing] = useState(false);
+  const bridge = typeof window === "undefined" ? undefined : window.aksharaDesktop;
+  const [appInfo, setAppInfo] = useState<AksharaAppInfo | null>(null);
+  const [checkingUpdates, setCheckingUpdates] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    bridge
+      ?.getAppInfo()
+      .then((info) => {
+        if (!cancelled) setAppInfo(info);
+      })
+      .catch(() => {
+        /* The bridge is optional outside the desktop app. */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [bridge]);
   const storageSize = useMemo(() => {
     try {
       const payload = Object.keys(localStorage)
@@ -283,6 +301,41 @@ export function SettingsPage() {
     }
   };
 
+  const handleCheckUpdates = async () => {
+    if (!bridge) {
+      toast("Updates are available in the desktop app");
+      return;
+    }
+
+    setCheckingUpdates(true);
+    try {
+      const result = await bridge.checkForUpdates();
+      if (result.status === "current") {
+        toast.success("You're up to date", {
+          description: `Akshara ${result.version ?? appInfo?.version ?? ""} is the latest version.`,
+        });
+      } else if (result.status === "available") {
+        toast("Update available", {
+          description: `Akshara ${result.version} is downloading in the background. Restart when it is ready.`,
+        });
+      } else if (result.status === "external") {
+        toast("Opening the release page", {
+          description: "This build updates through your package manager or the release page.",
+        });
+      } else {
+        toast.error("Could not check for updates", {
+          description: result.message ?? "Try again in a moment.",
+        });
+      }
+    } catch (error) {
+      toast.error("Could not check for updates", {
+        description: error instanceof Error ? error.message : "Try again in a moment.",
+      });
+    } finally {
+      setCheckingUpdates(false);
+    }
+  };
+
   const handleSignOut = async () => {
     const result = await session.signOut();
     if (!result.ok) {
@@ -422,6 +475,45 @@ export function SettingsPage() {
             </div>
           </SettingSection>
         ) : null}
+
+        <SettingSection
+          eyebrow="App"
+          title="Updates and version"
+          description="Akshara checks for new builds quietly after launch. An update never touches the PDFs on this device."
+        >
+          <div className="rounded-xl border border-line bg-surface p-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <p className="text-[0.8rem] font-medium text-ink">
+                  Akshara {appInfo ? `v${appInfo.version}` : "desktop"}
+                </p>
+                <p className="mt-1 max-w-md text-[0.68rem] leading-relaxed text-ink-muted">
+                  {!bridge
+                    ? "Version and update controls appear in the desktop app."
+                    : appInfo?.canAutoUpdate
+                      ? "Automatic updates are on. New versions download in the background and install when you restart."
+                      : appInfo?.platform === "linux"
+                        ? "This Linux package updates through your package manager. Checking opens the latest release page."
+                        : "Updates are handled by your package manager."}
+                </p>
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void handleCheckUpdates()}
+                disabled={checkingUpdates}
+              >
+                <RefreshCw className={cn("h-3.5 w-3.5", checkingUpdates && "animate-spin")} />
+                {checkingUpdates ? "Checking…" : "Check for updates"}
+              </Button>
+            </div>
+            <p className="mt-4 border-t border-line pt-4 text-[0.65rem] leading-relaxed text-ink-muted">
+              {appInfo?.canAutoUpdate
+                ? "Updates arrive from GitHub Releases. Your library, highlights, and reading positions stay in place."
+                : "You can always download the newest installer from the release page. Your library stays on this device."}
+            </p>
+          </div>
+        </SettingSection>
 
         <SettingSection
           eyebrow="Appearance"
@@ -882,7 +974,7 @@ export function SettingsPage() {
         <div className="flex items-center gap-2">
           <LogoMark className="w-8" />
           <p className="text-[0.65rem] text-ink-muted">
-            Akshara · v0.2 · Every letter opens a new world.
+            Akshara{appInfo ? ` · v${appInfo.version}` : ""} · Every letter opens a new world.
           </p>
         </div>
         <p className="text-[0.6rem] uppercase tracking-[0.14em] text-ink-muted">

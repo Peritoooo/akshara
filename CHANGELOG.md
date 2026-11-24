@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1
+
+- **Settings → Updates** now shows the running version and a **Check for updates**
+  button, so updates are discoverable without opening the menu bar.
+- The Settings footer reports the real app version instead of a hardcoded one.
+- Update checks started from Settings report the result inline; menu checks keep
+  their dialogs.
+
 ## 0.3.0
 
 - Automatic updates for Windows and the Linux AppImage. macOS uses the same flow

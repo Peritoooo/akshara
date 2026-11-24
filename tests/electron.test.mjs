@@ -102,12 +102,21 @@ test("opens the shell at app://akshara with the desktop bridge", { skip }, async
     present: Boolean(window.aksharaDesktop),
     onAuthLink: typeof window.aksharaDesktop?.onAuthLink,
     getAuthLink: typeof window.aksharaDesktop?.getAuthLink,
+    getAppInfo: typeof window.aksharaDesktop?.getAppInfo,
+    checkForUpdates: typeof window.aksharaDesktop?.checkForUpdates,
   }));
   assert.deepEqual(bridge, {
     present: true,
     onAuthLink: "function",
     getAuthLink: "function",
+    getAppInfo: "function",
+    checkForUpdates: "function",
   });
+
+  const info = await page.evaluate(() => window.aksharaDesktop.getAppInfo());
+  assert.equal(typeof info.version, "string");
+  assert.equal(info.packaged, false);
+  assert.equal(info.canAutoUpdate, false);
 });
 
 test("shows the local library without a sign-in gate", { skip }, async () => {
@@ -116,6 +125,22 @@ test("shows the local library without a sign-in gate", { skip }, async () => {
   });
   assert.equal(await page.getByText("Welcome back").count(), 0);
   assert.ok(await page.getByRole("button", { name: "Add a PDF" }).first().isVisible());
+});
+
+test("shows the update controls in Settings", { skip }, async () => {
+  await page.goto("app://akshara/settings", { waitUntil: "domcontentloaded" });
+  await page.getByText("Updates and version").waitFor({ timeout: 30_000 });
+
+  const info = await page.evaluate(() => window.aksharaDesktop.getAppInfo());
+  await page.getByText(`Akshara v${info.version}`).waitFor({ timeout: 10_000 });
+  assert.ok(
+    await page.getByRole("button", { name: "Check for updates" }).isVisible(),
+  );
+
+  await page.goto("app://akshara/", { waitUntil: "domcontentloaded" });
+  await page.getByText("Your reading room is quiet and ready.").waitFor({
+    timeout: 30_000,
+  });
 });
 
 test("imports a PDF and opens it in the reader", { skip }, async () => {

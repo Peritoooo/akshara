@@ -147,6 +147,8 @@ sync state, and stored PDFs. It cannot be undone.
 
 ## Updates
 
+- **Settings → Updates** shows the running version and a **Check for updates**
+  button. **Help → Check for Updates…** does the same from the menu bar.
 - **Windows and Linux AppImage:** Akshara checks quietly after launch and downloads
   updates in the background. **Help → Check for Updates…** checks immediately and prompts
   to restart when a build is ready.
