@@ -4,7 +4,7 @@
 
 - Automatic updates for Windows and the Linux AppImage. macOS uses the same flow
   once builds are signed. `.deb` installs keep using the release page.
-- Signed-in checks after launch, plus a **Help → Check for Updates…** action that
+- Quiet checks after launch, plus a **Help → Check for Updates…** action that
   reports progress, availability, and install prompts.
 - Windows (NSIS) and macOS (dmg/zip, Intel + Apple Silicon) packaging alongside
   the existing Linux `.deb` and AppImage.
