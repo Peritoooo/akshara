@@ -97,7 +97,7 @@ test("core routes render without console errors", { timeout: 90_000 }, async () 
   const { page, errors, close } = await openPage();
   try {
     const routes = [
-      ["/", /Good (morning|afternoon|evening)/],
+      ["/", /Good (morning|afternoon|evening|night)/],
       ["/library", /My Library/],
       ["/favorites", /Favorites/],
       ["/stats", /Reading, in numbers\./],
