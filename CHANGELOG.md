@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.0.0
+
+The first stable release, intended for general use.
+
+- Local-first desktop reader for PDFs: library, collections, favorites, reading
+  positions, bookmarks, highlights, notes, statistics, daily goals, and themes.
+- Optional accounts sync reading metadata between computers; PDF files never
+  leave the device that imported them.
+- Themed reader with page/width fitting, zoom, outline, keyboard shortcuts, and
+  text selection.
+- Automatic updates on Windows and the Linux AppImage; `.deb` updates through the
+  package manager; macOS updates once builds are signed.
+- Installers for Linux (`.deb`/AppImage), Windows (NSIS), and macOS (dmg/zip).
+- MIT licensed, with a security policy, contributing guide, code of conduct,
+  issue forms, and CI.
+
 ## 0.3.1
 
 - **Settings → Updates** now shows the running version and a **Check for updates**
