@@ -12,6 +12,18 @@ updates:
         update-types:
           - minor
           - patch
+    # The reader engine and desktop runtime need deliberate testing before a
+    # major bump, so those stay manual instead of opening a PR every week.
+    ignore:
+      - dependency-name: "electron"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "pdfjs-dist"
+        update-types:
+          - "version-update:semver-major"
+      - dependency-name: "electron-builder"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: github-actions
     directory: "/"
