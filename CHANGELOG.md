@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1
+
+- Official builds now include optional accounts and metadata sync. Creating an
+  account is still optional; reading, the library, and notes work without one.
+- No changes to the local-first model: PDFs never leave the device that imported
+  them, and only reading metadata syncs.
+
 ## 1.0.0
 
 The first stable release, intended for general use.

@@ -50,6 +50,11 @@ jobs:
       - run: npm ci
 
       - run: npm run build
+        env:
+          # Optional accounts and metadata sync. The anon key is public by
+          # design; row-level security protects each account.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
       - name: Build installers
         run: npx electron-builder ${{ matrix.command }} --publish never
