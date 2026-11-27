@@ -62,7 +62,7 @@ jobs:
           # Unsigned builds until signing certificates are added to the repo.
           CSC_IDENTITY_AUTO_DISCOVERY: "false"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.name }}
           path: ${{ matrix.artifacts }}
