@@ -207,11 +207,6 @@ No. Everything except cross-device sync works signed out.
 Check your spam folder first. If it still doesn't arrive, keep using Akshara
 without an account — reading, highlights, and notes all work signed out.
 
-**The confirmation link opened a web page instead of the app.**
-Your email is already confirmed at that point. Open Akshara and sign in with your
-password. (Reopening the app from the link requires the `akshara://` redirect
-URLs to be configured by whoever hosts the sync server.)
-
 **Does it work offline?**
 Yes. Reading, notes, and progress work without a connection. Changes made offline
 sync when the connection returns.
