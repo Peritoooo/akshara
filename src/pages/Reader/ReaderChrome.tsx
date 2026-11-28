@@ -12,6 +12,7 @@ import {
   Maximize,
   Minimize,
   Moon,
+  Search,
   Shrink,
   Sun,
   SunMedium,
@@ -66,6 +67,7 @@ const panelButtons: Array<{
   className?: string;
 }> = [
   { panel: "toc", label: "Contents", icon: ListTree },
+  { panel: "search", label: "Search this book", icon: Search },
   { panel: "bookmarks", label: "Bookmarks", icon: Bookmark, className: "hidden sm:inline-flex" },
   { panel: "highlights", label: "Highlights", icon: Highlighter, className: "hidden sm:inline-flex" },
   { panel: "appearance", label: "Reading appearance", icon: Type },

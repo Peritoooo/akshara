@@ -13,16 +13,21 @@ import type {
   TextLayer,
 } from "pdfjs-dist";
 import { loadPdfFile } from "@/lib/pdfStore";
+import { findTextMatches, makeSnippet } from "./search";
 import { highlightColors } from "./readerStyles";
 import type {
   ReaderLocation,
   ReaderTarget,
   ReaderViewHandle,
   ReaderViewProps,
+  SearchMatch,
+  SearchProgress,
   TocItem,
 } from "./types";
 
 type PdfTextContent = Awaited<ReturnType<PDFPageProxy["getTextContent"]>>;
+
+const SEARCH_RESULT_LIMIT = 500;
 
 interface PdfOutlineNode {
   title?: string;
@@ -163,12 +168,18 @@ export const PdfView = forwardRef<ReaderViewHandle, ReaderViewProps>(
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const textLayerRef = useRef<HTMLDivElement>(null);
     const highlightLayerRef = useRef<HTMLDivElement>(null);
+    const searchLayerRef = useRef<HTMLDivElement>(null);
     const pdfRef = useRef<PDFDocumentProxy | null>(null);
     const pdfjsRef = useRef<typeof import("pdfjs-dist") | null>(null);
     const textLayerCancelRef = useRef<(() => void) | null>(null);
     const textCacheRef = useRef<{ page: number; content: PdfTextContent } | null>(
       null,
     );
+    const pageTextCacheRef = useRef<Map<number, string>>(new Map());
+    const searchTokenRef = useRef(0);
+    const searchQueryRef = useRef("");
+    const activeSearchRef = useRef<{ page: number; index: number } | null>(null);
+    const scrollToSearchRef = useRef(false);
     const resizeTimerRef = useRef<number | null>(null);
     const outlineRef = useRef<TocItem[]>([]);
     const requestedPage = useRef<number | null>(initialTarget.page ?? null);
@@ -182,6 +193,7 @@ export const PdfView = forwardRef<ReaderViewHandle, ReaderViewProps>(
     const [zoom, setZoom] = useState(1);
     const [viewportTick, setViewportTick] = useState(0);
     const [textLayerTick, setTextLayerTick] = useState(0);
+    const [searchTick, setSearchTick] = useState(0);
 
     const pageRef = useRef(page);
     pageRef.current = page;
@@ -291,6 +303,8 @@ export const PdfView = forwardRef<ReaderViewHandle, ReaderViewProps>(
         cancelled = true;
         pdfRef.current = null;
         textCacheRef.current = null;
+        pageTextCacheRef.current.clear();
+        searchTokenRef.current += 1;
         setReady(false);
         if (loadingTask) void loadingTask.destroy();
       };
@@ -369,6 +383,72 @@ export const PdfView = forwardRef<ReaderViewHandle, ReaderViewProps>(
       }
     }, []);
 
+    /* Search hits are painted from the same text layer offsets as highlights. */
+    const paintSearch = useCallback(() => {
+      const layer = searchLayerRef.current;
+      const textLayerEl = textLayerRef.current;
+      const frameEl = frameRef.current;
+      if (!layer || !textLayerEl || !frameEl) return;
+
+      layer.replaceChildren();
+      const query = searchQueryRef.current;
+      if (!query) return;
+
+      const raw = textLayerEl.textContent ?? "";
+      const matches = findTextMatches(raw, query);
+      if (matches.length === 0) return;
+
+      const active = activeSearchRef.current;
+      const activeIndex =
+        active && active.page === pageRef.current ? active.index : -1;
+      const base = frameEl.getBoundingClientRect();
+      const activeRects: DOMRect[] = [];
+
+      matches.forEach((match, index) => {
+        const range = rangeFromOffsets(textLayerEl, match.start, match.end);
+        if (!range) return;
+        const isActive = index === activeIndex;
+
+        for (const rect of range.getClientRects()) {
+          if (rect.width < 1 || rect.height < 1) continue;
+          const marker = document.createElement("div");
+          marker.className = `reader-pdf-search${isActive ? " is-active" : ""}`;
+          marker.style.left = `${rect.left - base.left}px`;
+          marker.style.top = `${rect.top - base.top}px`;
+          marker.style.width = `${rect.width}px`;
+          marker.style.height = `${rect.height}px`;
+          layer.appendChild(marker);
+          if (isActive) activeRects.push(rect);
+        }
+      });
+
+      if (scrollToSearchRef.current) {
+        scrollToSearchRef.current = false;
+        const stage = stageRef.current;
+        const activeRect = activeRects[0];
+        if (stage && activeRect) {
+          const stageRect = stage.getBoundingClientRect();
+          const top =
+            activeRect.top -
+            stageRect.top +
+            stage.scrollTop -
+            stage.clientHeight / 2 +
+            activeRect.height / 2;
+          const left =
+            activeRect.left -
+            stageRect.left +
+            stage.scrollLeft -
+            stage.clientWidth / 2 +
+            activeRect.width / 2;
+          stage.scrollTo({
+            top: Math.max(0, top),
+            left: Math.max(0, left),
+            behavior: "smooth",
+          });
+        }
+      }
+    }, []);
+
     /* Native selection inside the text layer becomes a highlight candidate. */
     useEffect(() => {
       let active = false;
@@ -432,6 +512,18 @@ export const PdfView = forwardRef<ReaderViewHandle, ReaderViewProps>(
       textLayerTick,
       highlights,
       paintHighlights,
+    ]);
+
+    useEffect(() => {
+      if (ready) paintSearch();
+    }, [
+      ready,
+      page,
+      zoom,
+      viewportTick,
+      textLayerTick,
+      searchTick,
+      paintSearch,
     ]);
 
     useEffect(() => {
@@ -587,6 +679,98 @@ export const PdfView = forwardRef<ReaderViewHandle, ReaderViewProps>(
           window.getSelection()?.removeAllRanges();
           onSelection(null);
         },
+        search: async (
+          query: string,
+          onProgress: (progress: SearchProgress) => void,
+        ): Promise<SearchProgress> => {
+          const pdf = pdfRef.current;
+          const total = pdf?.numPages ?? 0;
+          if (!pdf || !query.trim()) {
+            return { scanned: 0, total, matches: [], truncated: false };
+          }
+
+          const token = ++searchTokenRef.current;
+          const matches: SearchMatch[] = [];
+          let truncated = false;
+          let scanned = 0;
+
+          searchQueryRef.current = query;
+          activeSearchRef.current = null;
+          setSearchTick((tick) => tick + 1);
+
+          const report = () =>
+            onProgress({
+              scanned,
+              total,
+              matches: [...matches],
+              truncated,
+            });
+
+          for (let pageNumber = 1; pageNumber <= total; pageNumber += 1) {
+            if (token !== searchTokenRef.current) break;
+
+            let text = pageTextCacheRef.current.get(pageNumber);
+            if (text === undefined) {
+              try {
+                const pdfPage = await pdf.getPage(pageNumber);
+                const content = await pdfPage.getTextContent();
+                text = content.items
+                  .map((item) => ("str" in item ? item.str : ""))
+                  .join("");
+              } catch {
+                text = "";
+              }
+              pageTextCacheRef.current.set(pageNumber, text);
+            }
+
+            if (text) {
+              const found = findTextMatches(text, query);
+              const chapter = chapterForPage(outlineRef.current, pageNumber);
+              const label = chapter
+                ? `Page ${pageNumber} · ${chapter}`
+                : `Page ${pageNumber}`;
+              for (let index = 0; index < found.length; index += 1) {
+                if (matches.length >= SEARCH_RESULT_LIMIT) {
+                  truncated = true;
+                  break;
+                }
+                const match = found[index];
+                matches.push({
+                  page: pageNumber,
+                  index,
+                  label,
+                  snippet: makeSnippet(text, match.start, match.end),
+                });
+              }
+            }
+
+            scanned = pageNumber;
+            if (truncated || pageNumber % 4 === 0 || pageNumber === total) {
+              report();
+            }
+            if (truncated) break;
+          }
+
+          return { scanned, total, matches, truncated };
+        },
+        focusSearchMatch: (match: SearchMatch) => {
+          if (!match.page) return;
+          activeSearchRef.current = { page: match.page, index: match.index };
+          scrollToSearchRef.current = true;
+          if (pageRef.current !== match.page) {
+            setPage(match.page);
+          } else {
+            setSearchTick((tick) => tick + 1);
+          }
+        },
+        clearSearch: () => {
+          searchTokenRef.current += 1;
+          searchQueryRef.current = "";
+          activeSearchRef.current = null;
+          scrollToSearchRef.current = false;
+          searchLayerRef.current?.replaceChildren();
+          setSearchTick((tick) => tick + 1);
+        },
         zoomIn: () => setZoom((current) => Math.min(3, +(current + 0.15).toFixed(2))),
         zoomOut: () =>
           setZoom((current) => Math.max(0.5, +(current - 0.15).toFixed(2))),
@@ -606,6 +790,11 @@ export const PdfView = forwardRef<ReaderViewHandle, ReaderViewProps>(
               ref={canvasRef}
               className="reader-pdf-canvas rounded-[2px]"
               aria-label={`Page ${page} of ${numPages}`}
+            />
+            <div
+              ref={searchLayerRef}
+              className="reader-pdf-search-layer"
+              aria-hidden="true"
             />
             <div
               ref={highlightLayerRef}

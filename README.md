@@ -108,6 +108,7 @@ computer, create one under **Settings → Account**.
 - Themed reader with light, sepia, and dark reading modes
 - Page, width, and custom zoom; single-page or spread layout
 - Table of contents, bookmarks, and keyboard-first navigation
+- Whole-book search with highlighted matches and page-by-page results
 - Text selection with persistent highlights and notes
 
 **Library**
@@ -133,6 +134,7 @@ These work while reading, as long as you are not typing in a note.
 | Key | Action |
 | --- | --- |
 | `←` / `→` | Previous / next page |
+| `Ctrl+F` / `Cmd+F` | Search this book |
 | `F` | Toggle focus mode |
 | `T` | Table of contents |
 | `B` | Add or remove a bookmark |
@@ -216,7 +218,9 @@ sync when the connection returns.
 Not yet. Akshara 1.0 imports PDFs only; EPUB support is in progress.
 
 **Can I search inside a book?**
-Not yet. Library search works; in-book search is the next major reader feature.
+Yes. Press `Ctrl+F` (`Cmd+F` on macOS) or use the search control in the reader,
+type a word or phrase, and step through the matches with Enter or the arrow
+buttons. Results are grouped by page, highlighted on the page, and work offline.
 
 **How do I uninstall?**
 - Windows: **Settings → Apps → Akshara → Uninstall**.

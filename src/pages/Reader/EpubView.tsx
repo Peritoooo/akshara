@@ -13,11 +13,24 @@ import type {
   ReaderTarget,
   ReaderViewHandle,
   ReaderViewProps,
+  SearchMatch,
+  SearchProgress,
   SelectionInfo,
   TocItem,
 } from "./types";
 
 const clamp = (value: number) => Math.min(1, Math.max(0, value));
+const SEARCH_RESULT_LIMIT = 500;
+
+interface SearchableSection {
+  href: string;
+  load: (request?: unknown) => Promise<unknown>;
+  find: (query: string) => Array<{ cfi: string; excerpt: string }>;
+  search?: (
+    query: string,
+    maxSeqEle?: number,
+  ) => Array<{ cfi: string; excerpt: string }>;
+}
 
 const locationsKey = (bookId: string) => `akshara-locations-v1:${bookId}`;
 
@@ -106,6 +119,8 @@ export const EpubView = forwardRef<ReaderViewHandle, ReaderViewProps>(
     const highlightsRef = useRef(highlights);
     const attachedRef = useRef<Set<string>>(new Set());
     const ensureLocationsRef = useRef<() => Promise<void>>(async () => {});
+    const searchTokenRef = useRef(0);
+    const searchAnnotationRef = useRef<string | null>(null);
     const preferencesRef = useRef<ReaderPreferences>(preferences);
     const readerThemeRef = useRef<ReaderTheme>(readerTheme);
 
@@ -538,6 +553,116 @@ export const EpubView = forwardRef<ReaderViewHandle, ReaderViewProps>(
             }
           });
           onSelectionRef.current(null);
+        },
+        search: async (
+          query: string,
+          onProgress: (progress: SearchProgress) => void,
+        ): Promise<SearchProgress> => {
+          const epubBook = bookRef.current;
+          const spine = epubBook?.spine as unknown as
+            | { length: number; get: (index: number) => SearchableSection }
+            | undefined;
+          const total = spine?.length ?? 0;
+          if (!epubBook || !spine || !query.trim()) {
+            return { scanned: 0, total, matches: [], truncated: false };
+          }
+
+          const token = ++searchTokenRef.current;
+          const matches: SearchMatch[] = [];
+          let truncated = false;
+          let scanned = 0;
+
+          for (let index = 0; index < total; index += 1) {
+            if (token !== searchTokenRef.current) break;
+
+            const section = spine.get(index);
+            if (section) {
+              try {
+                await section.load(epubBook.load.bind(epubBook));
+                const found = section.search
+                  ? section.search(query)
+                  : section.find(query);
+                const label =
+                  chapterFor(section.href, tocRef.current) ??
+                  `Section ${index + 1}`;
+                found.forEach((entry, matchIndex) => {
+                  if (matches.length >= SEARCH_RESULT_LIMIT) {
+                    truncated = true;
+                    return;
+                  }
+                  matches.push({
+                    cfi: entry.cfi,
+                    label,
+                    index: matchIndex,
+                    snippet: (entry.excerpt ?? "")
+                      .replace(/\s+/g, " ")
+                      .trim(),
+                  });
+                });
+              } catch {
+                /* A section that will not load cannot be searched. */
+              }
+            }
+
+            scanned = index + 1;
+            if (truncated || index % 2 === 0 || index === total - 1) {
+              onProgress({
+                scanned,
+                total,
+                matches: [...matches],
+                truncated,
+              });
+            }
+            if (truncated) break;
+          }
+
+          return { scanned, total, matches, truncated };
+        },
+        focusSearchMatch: (match: SearchMatch) => {
+          const rendition = renditionRef.current;
+          if (!rendition || !match.cfi) return;
+          const cfi = match.cfi;
+          void (async () => {
+            try {
+              await rendition.display(cfi);
+              if (searchAnnotationRef.current) {
+                try {
+                  rendition.annotations.remove(
+                    searchAnnotationRef.current,
+                    "highlight",
+                  );
+                } catch {
+                  /* annotation was not attached */
+                }
+                searchAnnotationRef.current = null;
+              }
+              rendition.annotations.highlight(
+                cfi,
+                {},
+                () => {},
+                "akshara-search",
+                { fill: "#c6a978", "fill-opacity": "0.45" },
+              );
+              searchAnnotationRef.current = cfi;
+            } catch {
+              onErrorRef.current("We could not find that place in the book.");
+            }
+          })();
+        },
+        clearSearch: () => {
+          searchTokenRef.current += 1;
+          const rendition = renditionRef.current;
+          if (rendition && searchAnnotationRef.current) {
+            try {
+              rendition.annotations.remove(
+                searchAnnotationRef.current,
+                "highlight",
+              );
+            } catch {
+              /* annotation was not attached */
+            }
+          }
+          searchAnnotationRef.current = null;
         },
         zoomIn: undefined,
         zoomOut: undefined,

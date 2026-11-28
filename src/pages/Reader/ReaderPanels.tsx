@@ -2,12 +2,15 @@ import { useEffect, useRef } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import {
   Bookmark as BookmarkIcon,
+  ChevronDown,
   ChevronRight,
+  ChevronUp,
   Highlighter,
   ListTree,
   Minus,
   Plus,
   RotateCcw,
+  Search,
   Trash2,
   Type,
   X,
@@ -21,7 +24,7 @@ import type {
   ReaderPreferences,
   ReaderThemeChoice,
 } from "@/types";
-import type { ReaderPanel, ReaderTarget, TocItem } from "./types";
+import type { ReaderPanel, ReaderTarget, SearchMatch, SearchProgress, TocItem } from "./types";
 import { cn, formatDate, percentLabel } from "@/lib/utils";
 import { seedSettings } from "@/data/seed";
 import {
@@ -43,6 +46,16 @@ interface ReaderPanelsProps {
   currentHref?: string;
   currentPage?: number;
   zoom: number;
+  searchQuery: string;
+  searchResults: SearchMatch[];
+  searchProgress: SearchProgress;
+  searching: boolean;
+  activeSearchIndex: number;
+  onSearchQueryChange: (query: string) => void;
+  onSelectSearchResult: (index: number) => void;
+  onSearchNext: () => void;
+  onSearchPrev: () => void;
+  onClearSearch: () => void;
   onGoTo: (target: ReaderTarget) => void;
   onRemoveBookmark: (id: string) => void;
   onEditHighlight: (highlight: Highlight) => void;
@@ -55,6 +68,7 @@ interface ReaderPanelsProps {
 
 const tabs: Array<{ panel: ReaderPanel; label: string; icon: typeof ListTree }> = [
   { panel: "toc", label: "Contents", icon: ListTree },
+  { panel: "search", label: "Search this book", icon: Search },
   { panel: "bookmarks", label: "Bookmarks", icon: BookmarkIcon },
   { panel: "highlights", label: "Highlights", icon: Highlighter },
   { panel: "appearance", label: "Appearance", icon: Type },
@@ -62,6 +76,7 @@ const tabs: Array<{ panel: ReaderPanel; label: string; icon: typeof ListTree }> 
 
 const panelTitles: Record<ReaderPanel, string> = {
   toc: "Contents",
+  search: "Search this book",
   bookmarks: "Bookmarks",
   highlights: "Highlights & notes",
   appearance: "Reading appearance",
@@ -98,6 +113,33 @@ function PanelEmpty({
         {description}
       </p>
     </div>
+  );
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function SearchSnippet({ text, query }: { text: string; query: string }) {
+  const needle = query.replace(/\s+/g, " ").trim();
+  if (!needle) return <>{text}</>;
+
+  const parts = text.split(new RegExp(`(${escapeRegExp(needle)})`, "gi"));
+  return (
+    <>
+      {parts.map((part, index) =>
+        index % 2 === 1 ? (
+          <mark
+            key={index}
+            className="rounded-[2px] bg-[var(--reader-accent)]/25 px-0.5 text-[var(--reader-ink)]"
+          >
+            {part}
+          </mark>
+        ) : (
+          <span key={index}>{part}</span>
+        ),
+      )}
+    </>
   );
 }
 
@@ -155,6 +197,16 @@ export function ReaderPanels({
   currentHref,
   currentPage,
   zoom,
+  searchQuery,
+  searchResults,
+  searchProgress,
+  searching,
+  activeSearchIndex,
+  onSearchQueryChange,
+  onSelectSearchResult,
+  onSearchNext,
+  onSearchPrev,
+  onClearSearch,
   onGoTo,
   onRemoveBookmark,
   onEditHighlight,
@@ -167,6 +219,7 @@ export function ReaderPanels({
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const activeTocRef = useRef<HTMLButtonElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const wasOpenRef = useRef(false);
   const previousPanelRef = useRef<ReaderPanel | null>(null);
@@ -194,6 +247,14 @@ export function ReaderPanels({
       closeRef.current?.focus();
     }
     previousPanelRef.current = panel;
+  }, [panel]);
+
+  useEffect(() => {
+    if (panel !== "search") return;
+    const frame = window.requestAnimationFrame(() => {
+      searchInputRef.current?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [panel]);
 
   const trapFocus = (event: ReactKeyboardEvent<HTMLElement>) => {
@@ -239,13 +300,29 @@ export function ReaderPanels({
 
   if (!panel) return null;
 
+  const matchGroupCount = new Set(
+    searchResults.map((match) => match.page ?? match.label),
+  ).size;
+  const searchStatus = searching
+    ? searchProgress.total > 0
+      ? `Searching ${searchProgress.scanned} of ${searchProgress.total}…`
+      : "Searching…"
+    : searchQuery.trim()
+      ? searchResults.length > 0
+        ? `${searchResults.length} ${searchResults.length === 1 ? "match" : "matches"} in ${matchGroupCount} ${matchGroupCount === 1 ? "place" : "places"}`
+        : "No matches"
+      : "Type a word or phrase to begin.";
+
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
       <button
         type="button"
         aria-label="Close panel"
         onClick={onClose}
-        className="reader-backdrop absolute inset-0"
+        className={cn(
+          "reader-backdrop absolute inset-0",
+          panel === "search" && "reader-backdrop-quiet",
+        )}
       />
       <section
         ref={panelRef}
@@ -311,6 +388,11 @@ export function ReaderPanels({
               {format === "epub" ? "Chapters from this edition" : "Page landmarks from this PDF"}
             </p>
           ) : null}
+          {panel === "search" ? (
+            <p className="mt-2 text-[0.7rem] reader-muted">
+              Find a word or phrase anywhere in this book.
+            </p>
+          ) : null}
           {panel === "bookmarks" ? (
             <p className="mt-2 text-[0.7rem] reader-muted">
               {bookmarks.length} saved {bookmarks.length === 1 ? "place" : "places"}
@@ -326,6 +408,127 @@ export function ReaderPanels({
         </div>
 
         <div className="reader-scroll min-h-0 flex-1 overflow-y-auto px-5 py-5">
+          {panel === "search" ? (
+            <div className="space-y-4">
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 reader-muted" />
+                <input
+                  ref={searchInputRef}
+                  data-reader-search
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => onSearchQueryChange(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter") return;
+                    event.preventDefault();
+                    if (event.shiftKey) onSearchPrev();
+                    else onSearchNext();
+                  }}
+                  placeholder="Search this book"
+                  aria-label="Search this book"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="h-10 w-full rounded-full border border-[var(--reader-line)] bg-[var(--reader-bg)] pl-9 pr-9 text-[0.8125rem] text-[var(--reader-ink)] outline-none transition-colors placeholder:text-[var(--reader-muted)] focus:border-[var(--reader-accent)]"
+                />
+                {searchQuery ? (
+                  <button
+                    type="button"
+                    onClick={onClearSearch}
+                    aria-label="Clear search"
+                    className="absolute right-2 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-[var(--reader-muted)] transition-colors hover:bg-[var(--reader-surface-strong)] hover:text-[var(--reader-ink)]"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <p
+                  aria-live="polite"
+                  className="min-w-0 text-[0.7rem] leading-snug reader-muted"
+                >
+                  {searchStatus}
+                </p>
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <button
+                    type="button"
+                    onClick={onSearchPrev}
+                    disabled={searchResults.length === 0}
+                    aria-label="Previous match"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--reader-muted)] transition-colors hover:bg-[var(--reader-surface-strong)] hover:text-[var(--reader-ink)] disabled:opacity-40"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </button>
+                  <span className="min-w-[3.1rem] text-center text-[0.65rem] tabular-nums reader-muted">
+                    {searchResults.length > 0
+                      ? `${activeSearchIndex >= 0 ? activeSearchIndex + 1 : "–"} / ${searchResults.length}`
+                      : "0 / 0"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={onSearchNext}
+                    disabled={searchResults.length === 0}
+                    aria-label="Next match"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[var(--reader-muted)] transition-colors hover:bg-[var(--reader-surface-strong)] hover:text-[var(--reader-ink)] disabled:opacity-40"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {searchQuery.trim() && !searching && searchResults.length === 0 ? (
+                <PanelEmpty
+                  title="Nothing found"
+                  description="Try a shorter word, or check the spelling. Search covers the text layer of the whole book."
+                />
+              ) : null}
+
+              {searchProgress.truncated ? (
+                <p className="text-[0.65rem] leading-relaxed reader-muted">
+                  Showing the first {searchResults.length} matches. Narrow the
+                  phrase to see the rest.
+                </p>
+              ) : null}
+
+              {searchResults.length > 0 ? (
+                <ul className="space-y-1.5">
+                  {searchResults.map((match, index) => (
+                    <li
+                      key={`${match.cfi ?? match.page ?? "match"}-${match.index}`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => onSelectSearchResult(index)}
+                        aria-current={
+                          index === activeSearchIndex ? "true" : undefined
+                        }
+                        className={cn(
+                          "w-full rounded-lg border px-3 py-2.5 text-left transition-colors",
+                          index === activeSearchIndex
+                            ? "border-[var(--reader-accent)] bg-[var(--reader-surface-strong)]"
+                            : "border-transparent hover:border-[var(--reader-line)] hover:bg-[var(--reader-surface-strong)]",
+                        )}
+                      >
+                        <span className="flex items-center justify-between gap-2 text-[0.575rem] uppercase tracking-[0.14em] reader-muted">
+                          <span className="truncate">{match.label}</span>
+                          <span className="shrink-0 tabular-nums">
+                            {index + 1}
+                          </span>
+                        </span>
+                        <span className="mt-1 block line-clamp-3 text-[0.78rem] leading-relaxed text-[var(--reader-ink-soft)]">
+                          <SearchSnippet
+                            text={match.snippet}
+                            query={searchQuery}
+                          />
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : null}
+
           {panel === "toc" ? (
             toc.length === 0 ? (
               <PanelEmpty
@@ -755,6 +958,7 @@ export function ReaderPanels({
             <dl className="space-y-2.5">
               {[
                 { keys: ["←", "→"], label: "Previous / next page" },
+                { keys: ["Ctrl", "F"], label: "Search this book" },
                 { keys: ["F"], label: "Toggle focus mode" },
                 { keys: ["T"], label: "Table of contents" },
                 { keys: ["B"], label: "Add or remove a bookmark" },

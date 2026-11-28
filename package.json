@@ -1,7 +1,7 @@
 {
   "name": "akshara",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.1.0",
   "type": "module",
   "description": "A local-first desktop PDF reader with optional metadata sync.",
   "author": "Peritooo <peritooo@users.noreply.github.com>",

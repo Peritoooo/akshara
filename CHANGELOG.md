@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.1.0
+
+- In-book search. Press `Ctrl+F` (`Cmd+F` on macOS) or use the search control
+  in the reader to scan the whole book, read snippets grouped by page or
+  chapter, and move through matches with Enter or the arrow buttons. Matches are
+  highlighted on the page, results stream in as pages are scanned, and
+  everything works offline.
+- Search covers PDF text layers and EPUB sections, keeps a per-book text cache
+  for fast repeat searches, and caps results at 500 per book.
+
 ## 1.0.1
 
 - Official builds now include optional accounts and metadata sync. Creating an

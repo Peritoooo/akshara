@@ -6,6 +6,7 @@ import type {
 
 export type ReaderPanel =
   | "toc"
+  | "search"
   | "bookmarks"
   | "highlights"
   | "appearance"
@@ -59,6 +60,35 @@ export interface ReaderViewHandle {
   clearSelection: () => void;
   zoomIn?: () => void;
   zoomOut?: () => void;
+  /** Scan the whole book and stream partial results as pages/sections load. */
+  search?: (
+    query: string,
+    onProgress: (progress: SearchProgress) => void,
+  ) => Promise<SearchProgress>;
+  /** Move to a result and mark it on the page. */
+  focusSearchMatch?: (match: SearchMatch) => void;
+  /** Remove every search highlight from the current page. */
+  clearSearch?: () => void;
+}
+
+export interface SearchMatch {
+  /** 1-based PDF page. Absent for reflowable books. */
+  page?: number;
+  /** EPUB CFI for the match. */
+  cfi?: string;
+  /** Page or chapter label shown in the results list. */
+  label: string;
+  /** Ordinal of the match within its page or section. */
+  index: number;
+  snippet: string;
+}
+
+export interface SearchProgress {
+  scanned: number;
+  total: number;
+  matches: SearchMatch[];
+  /** True when the result cap was reached. */
+  truncated: boolean;
 }
 
 export interface ReaderViewProps {

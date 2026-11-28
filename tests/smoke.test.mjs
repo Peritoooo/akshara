@@ -280,6 +280,61 @@ test("imported PDF follows the app theme and can be read, found, and deleted", {
   }
 });
 
+test("in-book search finds matches and moves between them", { timeout: 150_000 }, async () => {
+  const { page, errors, close } = await openPage();
+  try {
+    await importSamplePdf(page);
+    await page.locator("canvas").first().waitFor({
+      state: "visible",
+      timeout: 45_000,
+    });
+
+    await page.keyboard.press("Control+f");
+    const dialog = page.locator('section[role="dialog"]');
+    await dialog.waitFor({ state: "visible" });
+
+    const input = page.getByRole("searchbox", { name: "Search this book" });
+    await input.waitFor();
+    await input.fill("reader");
+
+    await page.waitForFunction(
+      () => {
+        const panel = document.querySelector('section[role="dialog"]');
+        const status = panel?.querySelector('[aria-live="polite"]')?.textContent;
+        return Boolean(status && /\d+ match/.test(status));
+      },
+      { timeout: 60_000 },
+    );
+
+    const status = await dialog
+      .locator('[aria-live="polite"]')
+      .innerText();
+    assert.match(status, /\d+ match/);
+
+    const results = dialog.locator("ul li button");
+    assert.ok((await results.count()) >= 2, "several matches are listed");
+
+    await results.first().click();
+    await page.waitForFunction(
+      () => document.querySelectorAll(".reader-pdf-search.is-active").length > 0,
+      { timeout: 15_000 },
+    );
+
+    await page.getByRole("button", { name: "Next match" }).click();
+    await page.waitForTimeout(600);
+    assert.ok(
+      (await page.locator(".reader-pdf-search.is-active").count()) > 0,
+      "the next match is marked on the page",
+    );
+
+    await page.keyboard.press("Escape");
+    await dialog.waitFor({ state: "hidden" });
+    assert.deepEqual(errors, []);
+  } finally {
+    await close();
+  }
+});
+
 test("reader panel traps focus and returns it to the trigger", { timeout: 120_000 }, async () => {
   const { page, errors, close } = await openPage();
   try {

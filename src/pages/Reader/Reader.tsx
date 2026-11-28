@@ -37,6 +37,8 @@ import type {
   ReaderPanel,
   ReaderTarget,
   ReaderViewHandle,
+  SearchMatch,
+  SearchProgress,
   SelectionInfo,
   TocItem,
 } from "./types";
@@ -124,6 +126,17 @@ export function ReaderPage() {
   const [epoch, setEpoch] = useState(0);
   const [showFocusHint, setShowFocusHint] = useState(false);
   const [attaching, setAttaching] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchMatch[]>([]);
+  const [searchProgress, setSearchProgress] = useState<SearchProgress>({
+    scanned: 0,
+    total: 0,
+    matches: [],
+    truncated: false,
+  });
+  const [searching, setSearching] = useState(false);
+  const [activeSearchIndex, setActiveSearchIndex] = useState(-1);
+  const searchRequestRef = useRef(0);
 
   const attachInputRef = useRef<HTMLInputElement>(null);
 
@@ -151,6 +164,64 @@ export function ReaderPage() {
     markOpened(bookId);
     if (fromStart.current) restartBook(bookId);
   }, [bookId, markOpened, restartBook]);
+
+  useEffect(() => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setSearchProgress({ scanned: 0, total: 0, matches: [], truncated: false });
+    setSearching(false);
+    setActiveSearchIndex(-1);
+  }, [bookId]);
+
+  /* Debounced whole-book search. Results stream in page by page. */
+  useEffect(() => {
+    const query = searchQuery.trim();
+    const request = ++searchRequestRef.current;
+
+    if (!query) {
+      setSearching(false);
+      setSearchResults([]);
+      setSearchProgress({ scanned: 0, total: 0, matches: [], truncated: false });
+      setActiveSearchIndex(-1);
+      viewRef.current?.clearSearch?.();
+      return;
+    }
+
+    setSearching(true);
+    setSearchResults([]);
+    setSearchProgress({ scanned: 0, total: 0, matches: [], truncated: false });
+    setActiveSearchIndex(-1);
+
+    if (!ready) return;
+
+    const timer = window.setTimeout(() => {
+      const view = viewRef.current;
+      if (!view?.search) {
+        setSearching(false);
+        return;
+      }
+
+      void view
+        .search(query, (progress) => {
+          if (request !== searchRequestRef.current) return;
+          setSearchProgress(progress);
+          setSearchResults(progress.matches);
+        })
+        .then((outcome) => {
+          if (request !== searchRequestRef.current) return;
+          setSearchProgress(outcome);
+          setSearchResults(outcome.matches);
+          setSearching(false);
+        })
+        .catch(() => {
+          if (request !== searchRequestRef.current) return;
+          setSearching(false);
+          setSearchResults([]);
+        });
+    }, 280);
+
+    return () => window.clearTimeout(timer);
+  }, [bookId, ready, searchQuery]);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -299,6 +370,45 @@ export function ReaderPage() {
   const handleZoomIn = useCallback(() => viewRef.current?.zoomIn?.(), []);
   const handleZoomOut = useCallback(() => viewRef.current?.zoomOut?.(), []);
 
+  const openSearch = useCallback(() => {
+    setSelection(null);
+    setPanel("search");
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLInputElement>("[data-reader-search]")
+        ?.focus();
+    });
+  }, []);
+
+  const focusSearchResult = useCallback(
+    (index: number) => {
+      const match = searchResults[index];
+      if (!match) return;
+      setActiveSearchIndex(index);
+      viewRef.current?.focusSearchMatch?.(match);
+    },
+    [searchResults],
+  );
+
+  const stepSearchResult = useCallback(
+    (delta: number) => {
+      const count = searchResults.length;
+      if (count === 0) return;
+      const next =
+        activeSearchIndex < 0
+          ? delta > 0
+            ? 0
+            : count - 1
+          : (activeSearchIndex + delta + count) % count;
+      focusSearchResult(next);
+    },
+    [activeSearchIndex, focusSearchResult, searchResults.length],
+  );
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery("");
+  }, []);
+
   const toggleFocus = useCallback(() => {
     setPanel(null);
     setSelection(null);
@@ -442,6 +552,11 @@ export function ReaderPage() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "f") {
+        event.preventDefault();
+        openSearch();
+        return;
+      }
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       if (draft || editingHighlight) return;
 
@@ -485,6 +600,10 @@ export function ReaderPage() {
           event.preventDefault();
           openPanel("appearance");
           break;
+        case "/":
+          event.preventDefault();
+          openSearch();
+          break;
         case "?":
           event.preventDefault();
           openPanel("shortcuts");
@@ -519,6 +638,7 @@ export function ReaderPage() {
     handlePrev,
     increaseText,
     openPanel,
+    openSearch,
     panel,
     toggleBookmark,
     toggleFocus,
@@ -785,6 +905,16 @@ export function ReaderPage() {
             currentHref={location.href}
             currentPage={location.page}
             zoom={location.zoom ?? 1}
+            searchQuery={searchQuery}
+            searchResults={searchResults}
+            searchProgress={searchProgress}
+            searching={searching}
+            activeSearchIndex={activeSearchIndex}
+            onSearchQueryChange={setSearchQuery}
+            onSelectSearchResult={focusSearchResult}
+            onSearchNext={() => stepSearchResult(1)}
+            onSearchPrev={() => stepSearchResult(-1)}
+            onClearSearch={clearSearch}
             onGoTo={handleGoTo}
             onRemoveBookmark={(id) => {
               removeBookmark(id);
