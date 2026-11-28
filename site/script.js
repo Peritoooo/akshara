@@ -21,6 +21,14 @@
     });
   });
 
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape" || !header?.classList.contains("nav-open")) return;
+    header.classList.remove("nav-open");
+    toggle?.setAttribute("aria-expanded", "false");
+    toggle?.setAttribute("aria-label", "Open menu");
+    toggle?.focus();
+  });
+
   const year = document.getElementById("year");
   if (year) year.textContent = String(new Date().getFullYear());
 

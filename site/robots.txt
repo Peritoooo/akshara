@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://peritoooo.github.io/akshara/sitemap.xml

@@ -338,6 +338,20 @@ macOS on their native runners and publishes the release. Signing is disabled by
 default; add `CSC_LINK`, `CSC_KEY_PASSWORD`, and (for macOS) notarization
 credentials as repository secrets to sign builds.
 
+### Website
+
+The landing page lives in `site/` as plain HTML, CSS, and JavaScript with no
+build step. It is deployed to GitHub Pages by `.github/workflows/pages.yml` on
+every push that touches `site/`.
+
+```bash
+cd site
+python3 -m http.server 8787   # preview at http://127.0.0.1:8787/
+```
+
+`site/script.js` asks the GitHub releases API for the newest version, so the
+version badge and download buttons stay current without editing the page.
+
 ### Tests
 
 ```bash
