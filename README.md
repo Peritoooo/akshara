@@ -4,6 +4,7 @@
 
 [![CI](https://github.com/Peritoooo/akshara/actions/workflows/ci.yml/badge.svg)](https://github.com/Peritoooo/akshara/actions/workflows/ci.yml)
 [![Latest release](https://img.shields.io/github/v/release/Peritoooo/akshara?label=release)](https://github.com/Peritoooo/akshara/releases/latest)
+[![Website](https://img.shields.io/badge/website-live-b69a69)](https://peritoooo.github.io/akshara/)
 [![License](https://img.shields.io/github/license/Peritoooo/akshara)](LICENSE)
 
 ![Akshara](docs/brand/akshara-hero.png)

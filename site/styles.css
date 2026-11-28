@@ -372,8 +372,8 @@ h1 em {
   content: "";
   position: absolute;
   z-index: -1;
-  top: -46px;
-  right: -36px;
+  top: -40px;
+  right: -6px;
   width: 62%;
   height: 62%;
   border-radius: 50%;
